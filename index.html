@@ -10,6 +10,77 @@
 </head>
 <body>
 
-<a href="sms:+919826425086?body=%2AKrishna%20Book%20Store%2A%F0%9F%93%9A%F0%9F%8E%92%F0%9F%96%8A%EF%B8%8F%0A%0A%23%E2%83%A3%20Your%20Gift%20card%20%3Ccode%3E%20has%20been%20Successfully%20Redeemed%0A%F0%9F%92%B0%C2%A0Gift%20Card%20Amount%20%3A%20%E2%82%B9%3Camount%3E%0A%E2%9C%89%EF%B8%8F%20%3Cmessage%3E%0A%0A%E2%9D%A4%EF%B8%8F%20Instapage%20%3A%20https%3A%2F%2Finstagram.com%2Fkrishnabookcentre%0A%E2%98%8E%EF%B8%8F%20Phone%20No%3A%20%2B919827640600">Send SMS</a>
+    <div class="main-container">
+        
+        <header>
+            <h1 class="st-title">CGPA Calculator</h1>
+            <p class="st-text">This is a simple CGPA calculator that calculates your CGPA based on your grades and credits</p>
+        </header>
+
+        <div class="formula-box">
+            $$ CGPA = \frac{\sum_{i=1}^{n} (grade_i * credit_i)}{\sum_{i=1}^{n} credit_i} $$
+        </div>
+
+        <div class="st-block">
+            <h3>Grade Table</h3>
+            <table class="st-table">
+                <thead>
+                    <tr>
+                        <th>Marks</th>
+                        <th>Grade</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>90-100</td><td>O</td><td>10</td></tr>
+                    <tr><td>80-89</td><td>A+</td><td>9</td></tr>
+                    <tr><td>70-79</td><td>A</td><td>8</td></tr>
+                    <tr><td>60-69</td><td>B+</td><td>7</td></tr>
+                    <tr><td>50-59</td><td>B</td><td>6</td></tr>
+                    <tr><td>40-49</td><td>C</td><td>5</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="input-section">
+            
+            <div class="st-widget">
+                <label for="prev-cgpa">Previous CGPA</label>
+                <input type="number" id="prev-cgpa" step="0.01" min="0" placeholder="0.00">
+            </div>
+
+            <div class="st-widget">
+                <label for="prev-credit">Previous Credit</label>
+                <input type="number" id="prev-credit" step="0.5" min="0" value="0">
+            </div>
+
+            <div class="st-widget">
+                <label for="num-subjects">Number of Subjects</label>
+                <input type="number" id="num-subjects" min="1" max="15" value="5">
+            </div>
+
+            <hr class="st-divider">
+
+            <div id="subjects-container">
+                </div>
+
+            <div class="st-button-container">
+                <button id="calculate-btn">Calculate</button>
+            </div>
+
+            <div id="result-container" class="hidden">
+                <p class="result-label">Your CGPA is:</p>
+                <h2 id="final-cgpa">0.00</h2>
+            </div>
+
+        </div>
+
+        <footer>
+            Made with ❤️ by Bhav Bansal
+        </footer>
+
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
