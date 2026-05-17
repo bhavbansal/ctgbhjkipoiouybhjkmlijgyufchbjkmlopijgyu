@@ -62,6 +62,8 @@ body.light-mode {
 html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100vw;
 }
 
 body {
@@ -72,6 +74,7 @@ body {
   line-height: 1.5;
   position: relative;
   overflow-x: hidden;
+  width: 100vw;
   transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
@@ -138,12 +141,14 @@ h1, h2, h3, h4, h5, h6 {
   position: sticky;
   top: 0;
   z-index: 100;
+  width: 100%;
   border-bottom: 1px solid var(--border-color);
   transition: all var(--transition-normal);
 }
 
 .navbar-inner {
   max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
   padding: 0 24px;
   height: 72px;
@@ -252,8 +257,10 @@ h1, h2, h3, h4, h5, h6 {
 /* ── Main Layout ── */
 .main-container {
   max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
   padding: 40px 24px 100px;
+  box-sizing: border-box;
 }
 
 .section {
@@ -445,11 +452,12 @@ body.light-mode .input-wrapper input:focus { background: #fff; }
 /* Search Input Wrap */
 .search-input-wrap {
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .search-input-wrap input {
   flex: 1;
+  min-width: 0;
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -584,7 +592,11 @@ body.light-mode .bento-item { background: rgba(255, 255, 255, 0.5); }
 .entries-card { padding: 0; overflow: hidden; }
 .entries-card .card-header { padding: 32px 32px 20px; margin-bottom: 0; border-bottom: 1px solid var(--border-color); }
 
-.table-container { overflow-x: auto; }
+.table-container { 
+  width: 100%;
+  overflow-x: auto; 
+  -webkit-overflow-scrolling: touch;
+}
 .entries-header, .entry-row {
   display: grid;
   grid-template-columns: 1.5fr 1.2fr 1fr 1fr 1.5fr 1fr 1fr;
@@ -734,6 +746,13 @@ body.light-mode .segmented-control { background: rgba(0,0,0,0.05); }
 }
 
 .chart-body { min-height: 300px; }
+#heatmapChart {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#heatmapChart > div {
+  min-width: 700px;
+}
 
 .loyalist-item {
   display: flex;
@@ -876,49 +895,56 @@ body.light-mode .loyalist-item { background: rgba(0,0,0,0.02); }
   position: fixed;
   bottom: 0; left: 0; width: 100%;
   z-index: 100;
-  background: var(--bg-surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--border-color);
   border-radius: 24px 24px 0 0;
   padding: 8px 24px 24px;
   display: none;
 }
 @media (max-width: 768px) {
+  .brand-text { font-size: 1.1rem; }
+  .brand-logo-wrap { width: 32px; height: 32px; }
+  .navbar-inner { padding: 0 16px; }
   .navbar-links .nav-btn { display: none; }
   .bottom-nav { display: block; }
-  .main-container { padding: 24px 16px 140px; }
+  .main-container { padding: 24px 16px 120px; }
   .toast { bottom: 120px; right: 50%; transform: translateX(50%); animation: toastEnterMobile 0.4s forwards, toastExitMobile 0.4s 2.6s forwards; }
   
   @keyframes toastEnterMobile { from { opacity: 0; transform: translate(50%, 20px); } to { opacity: 1; transform: translate(50%, 0); } }
   @keyframes toastExitMobile { from { opacity: 1; transform: translate(50%, 0); } to { opacity: 0; transform: translate(50%, 20px); } }
   .home-grid { gap: 32px; }
   .stats-grid { grid-template-columns: 1fr; }
-  .card { padding: 24px; }
+  .card { padding: 20px; }
   .form-grid { grid-template-columns: 1fr; }
   
   .entries-header { display: none; }
-  .entries-card .card-header { padding: 24px; margin-bottom: 12px; }
+  .table-container { padding: 4px; }
   .entry-row {
     display: flex;
     flex-direction: column;
-    min-width: 0;
-    padding: 16px 24px;
-    gap: 8px;
+    min-width: 100%;
+    padding: 16px;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
   }
+  body.light-mode .entry-row { background: rgba(255, 255, 255, 0.5); }
   .entry-row > span {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    width: 100%;
   }
   .entry-row > span::before {
     content: attr(data-label);
-    font-size: 0.75rem;
-    font-weight: 600;
     color: var(--text-muted);
+    font-size: 0.8rem;
     text-transform: uppercase;
+    font-weight: 600;
   }
+  .col-code { font-size: 1.1rem; justify-content: space-between; width: 100%; }
 }
 
 .bnav-inner {
