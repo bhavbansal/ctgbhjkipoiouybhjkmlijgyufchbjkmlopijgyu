@@ -876,6 +876,9 @@ body.light-mode .loyalist-item { background: rgba(0,0,0,0.02); }
   position: fixed;
   bottom: 0; left: 0; width: 100%;
   z-index: 100;
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--border-color);
   border-radius: 24px 24px 0 0;
   padding: 8px 24px 24px;
@@ -884,7 +887,7 @@ body.light-mode .loyalist-item { background: rgba(0,0,0,0.02); }
 @media (max-width: 768px) {
   .navbar-links .nav-btn { display: none; }
   .bottom-nav { display: block; }
-  .main-container { padding-bottom: 120px; }
+  .main-container { padding: 24px 16px 140px; }
   .toast { bottom: 120px; right: 50%; transform: translateX(50%); animation: toastEnterMobile 0.4s forwards, toastExitMobile 0.4s 2.6s forwards; }
   
   @keyframes toastEnterMobile { from { opacity: 0; transform: translate(50%, 20px); } to { opacity: 1; transform: translate(50%, 0); } }
@@ -893,6 +896,29 @@ body.light-mode .loyalist-item { background: rgba(0,0,0,0.02); }
   .stats-grid { grid-template-columns: 1fr; }
   .card { padding: 24px; }
   .form-grid { grid-template-columns: 1fr; }
+  
+  .entries-header { display: none; }
+  .entries-card .card-header { padding: 24px; margin-bottom: 12px; }
+  .entry-row {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 16px 24px;
+    gap: 8px;
+  }
+  .entry-row > span {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+  .entry-row > span::before {
+    content: attr(data-label);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
 }
 
 .bnav-inner {
