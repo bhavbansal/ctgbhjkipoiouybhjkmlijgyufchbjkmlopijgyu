@@ -540,13 +540,13 @@ async function loadEntries() {
       const card = document.createElement('div');
       card.className = 'entry-row';
       card.innerHTML = `
-        <span class="col-code">${entry.code}</span>
-        <span>${entry.mobile}</span>
-        <span>₹${entry.amount}</span>
-        <span>${decoded ? decoded.date : '—'}</span>
-        <span class="msg-box">${entry.message}</span>
-        <span><span class="badge ${isRedeemed ? 'badge-redeemed' : 'badge-active'}">${isRedeemed ? 'Redeemed' : 'Active'}</span></span>
-        <span>${isRedeemed && entry.redeemDate ? entry.redeemDate : '—'}</span>
+        <span class="col-code" data-label="Code">${entry.code}</span>
+        <span data-label="Mobile">${entry.mobile}</span>
+        <span data-label="Amount">₹${entry.amount}</span>
+        <span data-label="Issue Date">${decoded ? decoded.date : '—'}</span>
+        <span class="msg-box" data-label="Message">${entry.message}</span>
+        <span data-label="Status"><span class="badge ${isRedeemed ? 'badge-redeemed' : 'badge-active'}">${isRedeemed ? 'Redeemed' : 'Active'}</span></span>
+        <span data-label="Redeem Date">${isRedeemed && entry.redeemDate ? entry.redeemDate : '—'}</span>
       `;
       list.appendChild(card);
     });
