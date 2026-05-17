@@ -1,102 +1,888 @@
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // --- Configuration ---
-    const gradeMap = {
-        "O": 10,
-        "A+": 9,
-        "A": 8,
-        "B+": 7,
-        "B": 6,
-        "C": 5,
-        "D": 4, // Added for completeness, though table stops at C
-        "F": 0
-    };
+// ══════════════════════════════════════════════
+//  Krishna Book Store – Gift Card Management
+// ══════════════════════════════════════════════
 
-    // --- DOM Elements ---
-    const numSubjectsInput = document.getElementById('num-subjects');
-    const subjectsContainer = document.getElementById('subjects-container');
-    const calculateBtn = document.getElementById('calculate-btn');
-    const resultContainer = document.getElementById('result-container');
-    const finalCgpaDisplay = document.getElementById('final-cgpa');
-    
-    // --- Functions ---
+// ── WEBAPP URL ──
+// After deploying code.gs as a Web App, paste the URL here:
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwTEptp9ZbLUlsbsE-vH2p3BSpjokAHM1y1ZfV8gnFq5qzCXrBYRfEkWC--gqqYPjyZ/exec';
 
-    // Function to generate subject rows based on count
-    function renderSubjectRows(count) {
-        subjectsContainer.innerHTML = ''; // Clear existing
-        
-        for (let i = 1; i <= count; i++) {
-            const row = document.createElement('div');
-            row.classList.add('subject-row');
-            
-            row.innerHTML = `
-                <span class="subject-label">Subject #${i}</span>
-                <div class="row-inputs">
-                    <div class="input-group">
-                        <label>Grade</label>
-                        <select class="grade-select">
-                            <option value="O">O</option>
-                            <option value="A+">A+</option>
-                            <option value="A">A</option>
-                            <option value="B+">B+</option>
-                            <option value="B">B</option>
-                            <option value="C">C</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label>Credit</label>
-                        <input type="number" class="credit-input" value="4" min="0" step="1">
-                    </div>
-                </div>
-            `;
-            subjectsContainer.appendChild(row);
-        }
+// ── State ──
+let entriesOffset = 0;
+let generateLocked = false;
+
+// ── Theme Management ──
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-mode');
+  localStorage.setItem('gsheet_theme', isLight ? 'light' : 'dark');
+  document.getElementById('theme-icon').textContent = isLight ? 'dark_mode' : 'light_mode';
+  
+  if (typeof cachedAnalyticsData !== 'undefined' && cachedAnalyticsData) {
+    renderHeatmap();
+    renderReturnAnalysis(cachedAnalyticsData);
+    renderSegmentation(cachedAnalyticsData);
+  }
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('gsheet_theme');
+  if (savedTheme === 'dark') {
+    document.body.classList.remove('light-mode');
+    const icon = document.getElementById('theme-icon');
+    if (icon) icon.textContent = 'light_mode';
+  } else {
+    document.body.classList.add('light-mode');
+    const icon = document.getElementById('theme-icon');
+    if (icon) icon.textContent = 'dark_mode';
+  }
+}
+initTheme();
+
+// ══════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════
+function navigate(page) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn, .bnav-btn').forEach(b => b.classList.remove('active'));
+
+  document.getElementById('section-' + page).classList.add('active');
+  document.getElementById('nav-' + page).classList.add('active');
+  
+  const bnav = document.getElementById('bnav-' + page);
+  if (bnav) {
+    bnav.classList.add('active');
+    const index = bnav.getAttribute('data-index');
+    const indicator = document.querySelector('.bnav-indicator');
+    if (indicator) {
+      indicator.style.transform = `translateX(calc(${index} * 100%))`;
+    }
+  }
+
+  const btnSync = document.getElementById('btn-sync-cache');
+  if (page === 'admin') {
+    if (btnSync) btnSync.style.display = 'none';
+  } else {
+    if (btnSync) btnSync.style.display = '';
+  }
+
+  if (page === 'entries') {
+    entriesOffset = 0;
+    document.getElementById('entriesList').innerHTML = '';
+    loadEntries();
+  }
+  if (page === 'admin') loadAdminStats();
+}
+
+// ══════════════════════════════════════════════
+//  ENCODING MAPS
+// ══════════════════════════════════════════════
+const DIGIT_REPLACEMENTS = {
+  0: ['0', 'Z', 'J', 'T', 'X'],
+  1: ['1', 'A', 'K', 'Y'],
+  2: ['2', 'B', 'L', 'W'],
+  3: ['3', 'C', 'M'],
+  4: ['4', 'D', 'N'],
+  5: ['5', 'E', 'V'],
+  6: ['6', 'F', 'P'],
+  7: ['7', 'G', 'Q'],
+  8: ['8', 'H', 'R'],
+  9: ['9', 'U', 'S']
+};
+
+const HOUR_MAP = ['A','B','C','D','E','F','G','H','J','K','L','M','N','P','Q','R','S','T','U','V','W','X','Y','Z'];
+
+const YEAR_MAP = ['A','B','C','D','E','F','G','H','J','K','L','M','N','P','Q','R','S','T','U','V','W','X','Y','Z','0','1','2','3','4','5','6','7','8','9'];
+
+const MONTH_MAP = {
+  1:  ['1', 'E'],
+  2:  ['2', 'F'],
+  3:  ['3', 'G'],
+  4:  ['4', 'H'],
+  5:  ['5', 'J'],
+  6:  ['6', 'K'],
+  7:  ['7', 'L'],
+  8:  ['8', 'M'],
+  9:  ['9', 'A'],
+  10: ['B'],
+  11: ['C'],
+  12: ['D']
+};
+
+const DATE_MAP = {
+  1:'1',2:'2',3:'3',4:'4',5:'5',6:'6',7:'7',8:'8',9:'9',
+  10:'A',11:'B',12:'C',13:'D',14:'E',15:'F',16:'G',17:'H',
+  18:'J',19:'K',20:'L',21:'M',22:'N',23:'P',24:'Q',25:'R',
+  26:'S',27:'T',28:'U',29:'V',30:'W',31:'X'
+};
+
+// ── Reverse maps for decoding ──
+const CHAR_TO_DIGIT = {};
+for (const [digit, chars] of Object.entries(DIGIT_REPLACEMENTS)) {
+  for (const ch of chars) CHAR_TO_DIGIT[ch] = digit;
+}
+
+const HOUR_REVERSE = {};
+HOUR_MAP.forEach((ch, i) => HOUR_REVERSE[ch] = i);
+
+const YEAR_REVERSE = {};
+YEAR_MAP.forEach((ch, i) => YEAR_REVERSE[ch] = 2026 + i);
+
+const MONTH_REVERSE = {};
+for (const [m, chars] of Object.entries(MONTH_MAP)) {
+  for (const ch of chars) MONTH_REVERSE[ch] = parseInt(m);
+}
+
+const DATE_REVERSE = {};
+for (const [d, ch] of Object.entries(DATE_MAP)) {
+  DATE_REVERSE[ch] = parseInt(d);
+}
+
+// ══════════════════════════════════════════════
+//  ENCODING
+// ══════════════════════════════════════════════
+function encodeDigit(d) {
+  const opts = DIGIT_REPLACEMENTS[d];
+  return opts[Math.floor(Math.random() * opts.length)];
+}
+
+function encodeTime(now) {
+  const sec = String(now.getSeconds()).padStart(2, '0');
+  const min = String(now.getMinutes()).padStart(2, '0');
+  const hr = now.getHours();
+  const yr = now.getFullYear();
+  const mo = now.getMonth() + 1;
+  const dt = now.getDate();
+
+  const c1 = encodeDigit(parseInt(sec[0]));
+  const c2 = encodeDigit(parseInt(sec[1]));
+  const c3 = encodeDigit(parseInt(min[0]));
+  const c4 = encodeDigit(parseInt(min[1]));
+  const c5 = HOUR_MAP[hr];
+
+  // Year: map last 2 digits offset from 2026, cycle every 34
+  const yearOffset = ((yr % 100) - 26 + 34) % 34;
+  const c6 = YEAR_MAP[yearOffset];
+
+  const moOpts = MONTH_MAP[mo];
+  const c7 = moOpts[Math.floor(Math.random() * moOpts.length)];
+  const c8 = DATE_MAP[dt];
+
+  return ('GIFT-' + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8).toUpperCase();
+}
+
+// ══════════════════════════════════════════════
+//  DECODING
+// ══════════════════════════════════════════════
+function decodeGiftCard(code) {
+  if (!code || code.length !== 13 || !code.startsWith('GIFT-')) return null;
+  const enc = code.substring(5);
+
+  const s1 = CHAR_TO_DIGIT[enc[0]];
+  const s2 = CHAR_TO_DIGIT[enc[1]];
+  const m1 = CHAR_TO_DIGIT[enc[2]];
+  const m2 = CHAR_TO_DIGIT[enc[3]];
+  const hr = HOUR_REVERSE[enc[4]];
+  const yr = YEAR_REVERSE[enc[5]];
+  const mo = MONTH_REVERSE[enc[6]];
+  const dt = DATE_REVERSE[enc[7]];
+
+  if ([s1, s2, m1, m2, hr, yr, mo, dt].some(v => v === undefined)) return null;
+
+  const seconds = parseInt(s1 + '' + s2);
+  const minutes = parseInt(m1 + '' + m2);
+
+  const dateStr = String(dt).padStart(2, '0') + '/' + String(mo).padStart(2, '0') + '/' + yr;
+  const timeStr = String(hr).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+
+  return { date: dateStr, time: timeStr, year: yr, month: mo, day: dt };
+}
+
+// ══════════════════════════════════════════════
+//  AUTO-UPDATE DATE / TIME
+// ══════════════════════════════════════════════
+function updateDateTime() {
+  const now = new Date();
+  const dateStr = String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0') + '/' + now.getFullYear();
+  const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+  const dateEl = document.getElementById('genDate');
+  const timeEl = document.getElementById('genTime');
+  if (dateEl) dateEl.textContent = dateStr;
+  if (timeEl) timeEl.textContent = timeStr;
+}
+setInterval(updateDateTime, 1000);
+updateDateTime();
+
+// ══════════════════════════════════════════════
+//  API HELPER
+// ══════════════════════════════════════════════
+async function apiCall(payload) {
+  const res = await fetch(WEBAPP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+    redirect: 'follow'
+  });
+  return res.json();
+}
+
+// ══════════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════════
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ══════════════════════════════════════════════
+//  CACHE MANAGEMENT
+// ══════════════════════════════════════════════
+async function syncCache() {
+  const btn = document.getElementById('btn-sync-cache');
+  if (btn) { btn.style.pointerEvents = 'none'; btn.style.opacity = '0.5'; }
+  
+  // Clear the cache first
+  localStorage.removeItem('gsheet_cache_data');
+  showToast('Clearing cache and fetching new data...', 'success');
+  
+  try {
+    let allData = [];
+    let offset = 0;
+    let hasMore = true;
+    
+    while(hasMore) {
+      const resp = await apiCall({ action: 'getAllEntries', offset: offset });
+      if(resp.success) {
+        if (!resp.data || resp.data.length === 0) break;
+        allData = allData.concat(resp.data);
+        offset += resp.data.length;
+        hasMore = resp.hasMore === true || resp.hasMore === 'true';
+        if (offset > 50000) break; // safeguard
+      } else {
+        throw new Error(resp.error || 'Fetch failed');
+      }
+    }
+    
+    localStorage.setItem('gsheet_cache_data', JSON.stringify(allData));
+    showToast('Sync complete! Data cached.', 'success');
+    
+    if (document.getElementById('section-entries').classList.contains('active')) {
+      entriesOffset = 0;
+      document.getElementById('entriesList').innerHTML = '';
+      loadEntries();
+    }
+  } catch (err) {
+    showToast('Failed to sync data', 'error');
+  }
+  
+  if (btn) { btn.style.pointerEvents = 'auto'; btn.style.opacity = '1'; }
+}
+
+// ══════════════════════════════════════════════
+//  GENERATE GIFT CARD
+// ══════════════════════════════════════════════
+async function generateGiftCard() {
+  if (generateLocked) return;
+
+  const mobile = document.getElementById('genMobile').value.trim();
+  const amount = document.getElementById('genAmount').value.trim();
+  const message = document.getElementById('genMessage').value.trim() || 'Thank You, Visit Again';
+
+  if (!/^\d{10}$/.test(mobile)) { showToast('Enter a valid 10-digit mobile number', 'error'); return; }
+  if (!amount || Number(amount) <= 0) { showToast('Enter a valid amount', 'error'); return; }
+
+  const now = new Date();
+  const code = encodeTime(now);
+  const dateStr = String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0') + '/' + now.getFullYear();
+  const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+
+  // Lock button for 1 second
+  generateLocked = true;
+  const btn = document.getElementById('btnGenerate');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating…';
+
+  try {
+    const resp = await apiCall({ action: 'generate', mobile, code, message, amount });
+    if (resp.success) {
+      const cachedStr = localStorage.getItem('gsheet_cache_data');
+      if (cachedStr) {
+        try {
+          const cachedData = JSON.parse(cachedStr);
+          cachedData.unshift({ code, mobile, amount, message, redeemStatus: 1 });
+          localStorage.setItem('gsheet_cache_data', JSON.stringify(cachedData));
+        } catch(e) {}
+      }
+      showToast('Gift card generated!', 'success');
+
+      // WhatsApp link
+      const waLink = buildWhatsappGenerate(mobile, code, amount, dateStr, timeStr, message);
+      document.getElementById('modalGenWhatsapp').href = waLink;
+
+      // Telegram link
+      const tgLink = buildTelegramGenerate(mobile, code, amount, dateStr, timeStr, message);
+      document.getElementById('modalGenTelegram').href = tgLink;
+
+      // SMS link
+      const smsLink = buildSmsGenerate(mobile, code, amount, dateStr, timeStr, message);
+      document.getElementById('modalGenSms').href = smsLink;
+
+      document.getElementById('modalGenCodeDisplay').textContent = code;
+      document.getElementById('generateModal').classList.add('show');
+      
+      resetGenerate();
+    } else {
+      showToast(resp.error || 'Generation failed', 'error');
+    }
+  } catch (err) {
+    showToast('Network error. Check connection.', 'error');
+  }
+
+  // Unlock after 1 second
+  setTimeout(() => {
+    generateLocked = false;
+    btn.disabled = false;
+    btn.innerHTML = 'Generate Code';
+  }, 1000);
+}
+
+function resetGenerate() {
+  document.getElementById('genMobile').value = '';
+  document.getElementById('genAmount').value = '';
+  document.getElementById('genMessage').value = 'Thank You, Visit Again';
+  document.getElementById('genMobile').focus();
+}
+
+function closeGenerateModal() {
+  document.getElementById('generateModal').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════
+//  SEARCH GIFT CARD
+// ══════════════════════════════════════════════
+async function searchGiftCard() {
+  const code = document.getElementById('searchCode').value.trim().toUpperCase();
+  if (!/^GIFT-[A-Z0-9]{8}$/.test(code)) { showToast('Enter a valid code: GIFT-XXXXXXXX', 'error'); return; }
+
+  const btn = document.getElementById('btnSearch');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Searching…';
+
+  try {
+    let d = null;
+    let fromCache = false;
+    const cachedStr = localStorage.getItem('gsheet_cache_data');
+    if (cachedStr) {
+      try {
+        const cachedData = JSON.parse(cachedStr);
+        d = cachedData.find(item => item.code === code);
+        if (d) fromCache = true;
+      } catch(e) {}
     }
 
-    // Function to calculate CGPA
-    function calculateCGPA() {
-        const prevCGPA = parseFloat(document.getElementById('prev-cgpa').value) || 0;
-        const prevCredit = parseFloat(document.getElementById('prev-credit').value) || 0;
-
-        let totalPoints = prevCGPA * prevCredit;
-        let totalCredits = prevCredit;
-
-        const subjectRows = document.querySelectorAll('.subject-row');
-
-        subjectRows.forEach(row => {
-            const grade = row.querySelector('.grade-select').value;
-            const credit = parseFloat(row.querySelector('.credit-input').value) || 0;
-            
-            const gradePoint = gradeMap[grade] || 0;
-            
-            totalPoints += (gradePoint * credit);
-            totalCredits += credit;
-        });
-
-        // Avoid division by zero
-        let cgpa = 0;
-        if (totalCredits > 0) {
-            cgpa = totalPoints / totalCredits;
-        }
-
-        // Display Result
-        finalCgpaDisplay.textContent = cgpa.toFixed(2);
-        resultContainer.classList.remove('hidden');
+    if (!fromCache) {
+      const resp = await apiCall({ action: 'search', code });
+      if (resp.success) {
+        d = resp.data;
+      } else {
+        showToast(resp.error || 'Card not found', 'error');
+        document.getElementById('searchResult').classList.remove('show');
+        btn.disabled = false;
+        btn.innerHTML = '🔍 Search';
+        return;
+      }
     }
 
-    // --- Event Listeners ---
-    
-    // Update rows when number of subjects changes
-    numSubjectsInput.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value);
-        if (val > 0 && val <= 50) { // Safety limit
-            renderSubjectRows(val);
-        }
+    if (d) {
+      const decoded = decodeGiftCard(d.code);
+
+      document.getElementById('resMobile').textContent = d.mobile;
+      document.getElementById('resAmount').textContent = '₹' + d.amount;
+      document.getElementById('resDate').textContent = decoded ? decoded.date : '—';
+      document.getElementById('resTime').textContent = decoded ? decoded.time : '—';
+      document.getElementById('resMessage').textContent = d.message;
+
+      const isRedeemed = (d.redeemStatus === 0 || d.redeemStatus === '0');
+      document.getElementById('resStatus').innerHTML = isRedeemed
+        ? '<span class="badge badge-redeemed">Redeemed</span>'
+        : '<span class="badge badge-active">Active</span>';
+
+      // Redeem actions
+      const actions = document.getElementById('redeemActions');
+      if (isRedeemed) {
+        document.getElementById('btnRedeem').style.display = 'none';
+      } else {
+        document.getElementById('btnRedeem').style.display = '';
+        document.getElementById('btnRedeem').setAttribute('data-code', d.code);
+        document.getElementById('btnRedeem').setAttribute('data-mobile', d.mobile);
+        document.getElementById('btnRedeem').setAttribute('data-amount', d.amount);
+        document.getElementById('btnRedeem').setAttribute('data-message', d.message);
+      }
+
+      document.getElementById('searchResult').classList.add('show');
+    }
+  } catch (err) {
+    showToast('Network error. Check connection.', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🔍 Search';
+}
+
+function resetSearch() {
+  document.getElementById('searchResult').classList.remove('show');
+  document.getElementById('searchCode').value = 'GIFT-';
+  document.getElementById('searchCode').focus();
+}
+
+function closeRedeemModal() {
+  document.getElementById('redeemModal').classList.remove('show');
+  resetSearch();
+}
+
+// ══════════════════════════════════════════════
+//  REDEEM GIFT CARD
+// ══════════════════════════════════════════════
+async function redeemGiftCard() {
+  const btn = document.getElementById('btnRedeem');
+  const code = btn.getAttribute('data-code') || document.getElementById('searchCode').value.trim().toUpperCase();
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Redeeming…';
+
+  try {
+    const resp = await apiCall({ action: 'redeem', code });
+    if (resp.success) {
+      const cachedStr = localStorage.getItem('gsheet_cache_data');
+      if (cachedStr) {
+        try {
+          const cachedData = JSON.parse(cachedStr);
+          const item = cachedData.find(i => i.code === code);
+          if (item) {
+            item.redeemStatus = 0;
+            localStorage.setItem('gsheet_cache_data', JSON.stringify(cachedData));
+          }
+        } catch(e) {}
+      }
+      showToast('Gift card redeemed successfully!', 'success');
+      document.getElementById('resStatus').innerHTML = '<span class="badge badge-redeemed">Redeemed</span>';
+      btn.style.display = 'none';
+
+      // Open Modal and populate links
+      const mobile = btn.getAttribute('data-mobile');
+      const amount = btn.getAttribute('data-amount');
+      const message = btn.getAttribute('data-message');
+
+      document.getElementById('modalWhatsapp').href = buildWhatsappRedeem(mobile, code, amount, message);
+      document.getElementById('modalTelegram').href = buildTelegramRedeem(mobile, code, amount, message);
+      document.getElementById('modalSms').href = buildSmsRedeem(mobile, code, amount, message);
+      
+      document.getElementById('redeemModal').classList.add('show');
+    } else {
+      showToast(resp.error || 'Redeem failed', 'error');
+    }
+  } catch (err) {
+    showToast('Network error', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '✅ Redeem Card';
+}
+
+// ══════════════════════════════════════════════
+//  ALL ENTRIES
+// ══════════════════════════════════════════════
+async function loadEntries() {
+  const btn = document.getElementById('btnLoadMore');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Loading…';
+
+  try {
+    let dataToDisplay = [];
+    let hasMore = false;
+    let fromCache = false;
+
+    const cachedStr = localStorage.getItem('gsheet_cache_data');
+    if (cachedStr) {
+      try {
+        const cachedData = JSON.parse(cachedStr);
+        const pageSize = 50;
+        dataToDisplay = cachedData.slice(entriesOffset, entriesOffset + pageSize);
+        hasMore = (entriesOffset + pageSize) < cachedData.length;
+        fromCache = true;
+      } catch(e) {}
+    }
+
+    if (!fromCache) {
+      const resp = await apiCall({ action: 'getAllEntries', offset: entriesOffset });
+      if (resp.success) {
+        dataToDisplay = resp.data;
+        hasMore = resp.hasMore;
+      } else {
+        throw new Error('Failed to load');
+      }
+    }
+
+    const list = document.getElementById('entriesList');
+    if (dataToDisplay.length === 0 && entriesOffset === 0) {
+      document.getElementById('entriesEmpty').style.display = '';
+      document.getElementById('loadMoreWrap').style.display = 'none';
+      btn.disabled = false;
+      btn.innerHTML = 'Load More';
+      return;
+    }
+    document.getElementById('entriesEmpty').style.display = 'none';
+
+    dataToDisplay.forEach(entry => {
+      const decoded = decodeGiftCard(entry.code);
+      const isRedeemed = (entry.redeemStatus === 0 || entry.redeemStatus === '0');
+      const card = document.createElement('div');
+      card.className = 'entry-row';
+      card.innerHTML = `
+        <span class="col-code">${entry.code}</span>
+        <span>${entry.mobile}</span>
+        <span>₹${entry.amount}</span>
+        <span>${decoded ? decoded.date : '—'}</span>
+        <span class="msg-box">${entry.message}</span>
+        <span><span class="badge ${isRedeemed ? 'badge-redeemed' : 'badge-active'}">${isRedeemed ? 'Redeemed' : 'Active'}</span></span>
+        <span>${isRedeemed && entry.redeemDate ? entry.redeemDate : '—'}</span>
+      `;
+      list.appendChild(card);
     });
 
-    // Calculate on click
-    calculateBtn.addEventListener('click', calculateCGPA);
+    entriesOffset += dataToDisplay.length;
+    document.getElementById('loadMoreWrap').style.display = hasMore ? '' : 'none';
+  } catch (err) {
+    showToast('Failed to load entries', 'error');
+  }
 
-    // --- Initialization ---
-    renderSubjectRows(5); // Default to 5 subjects on load
-});
+  btn.disabled = false;
+  btn.innerHTML = 'Load More';
+}
+
+function loadMoreEntries() {
+  loadEntries();
+}
+
+// ══════════════════════════════════════════════
+//  ADMIN STATS
+// ══════════════════════════════════════════════
+async function loadAdminStats() {
+  try {
+    const resp = await apiCall({ action: 'getAdminStats' });
+    if (resp.success) {
+      const s = resp.stats;
+      document.getElementById('statCustomers').textContent = s.totalCustomers;
+      document.getElementById('statTotalAmount').textContent = '₹' + s.totalAmountIssued.toLocaleString('en-IN');
+      document.getElementById('statTodayEntries').textContent = s.todayEntries;
+      document.getElementById('statTodayAmount').textContent = '₹' + s.todayAmount.toLocaleString('en-IN');
+      document.getElementById('statAvgBilling').textContent = '₹' + s.averageBilling.toLocaleString('en-IN');
+      document.getElementById('statClaimed').textContent = '₹' + s.totalClaimed.toLocaleString('en-IN');
+      document.getElementById('statRemaining').textContent = '₹' + s.totalRemaining.toLocaleString('en-IN');
+    }
+    
+    // Compute Conversion KPI from cache
+    const cacheStr = localStorage.getItem('gsheet_cache_data');
+    if (cacheStr) {
+      const cache = JSON.parse(cacheStr);
+      if (cache.length > 0) {
+        const redeemed = cache.filter(i => i.redeemStatus === 0 || i.redeemStatus === '0').length;
+        const conv = ((redeemed / cache.length) * 100).toFixed(1);
+        document.getElementById('statConversion').textContent = conv + '%';
+      }
+    }
+  } catch (err) {
+    showToast('Failed to load stats', 'error');
+  }
+}
+
+// ══════════════════════════════════════════════
+//  ADVANCED ANALYTICS
+// ══════════════════════════════════════════════
+let heatmapChartInst = null;
+let returnChartInst = null;
+let segmentChartInst = null;
+let currentHeatmapMetric = 'issued';
+let cachedAnalyticsData = null;
+
+async function calculateAdminPage() {
+  const btn = document.getElementById('btnAdminCalc');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Loading…';
+
+  try {
+    // 1. Fetch base admin stats directly from backend
+    await loadAdminStats();
+
+    // 2. Refresh entire local cache for advanced analytics processing
+    let allData = [];
+    let offset = 0;
+    let hasMore = true;
+    while(hasMore) {
+      const resp = await apiCall({ action: 'getAllEntries', offset: offset });
+      if(resp.success) {
+        if (!resp.data || resp.data.length === 0) break;
+        allData = allData.concat(resp.data);
+        offset += resp.data.length;
+        hasMore = resp.hasMore === true || resp.hasMore === 'true';
+        if (offset > 50000) break;
+      } else {
+        throw new Error('Cache fetch failed');
+      }
+    }
+    
+    if (allData.length > 0) {
+      localStorage.setItem('gsheet_cache_data', JSON.stringify(allData));
+    }
+
+    // 3. Generate advanced charts using the newly downloaded dataset
+    generateAnalytics();
+
+    showToast('Admin Dashboard updated!', 'success');
+  } catch (e) {
+    showToast('Error updating dashboard', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = originalHtml;
+}
+
+function parseDateStr(str) {
+  if(!str) return null;
+  const parts = str.split('/');
+  if(parts.length !== 3) return null;
+  return new Date(parts[2], parseInt(parts[1])-1, parts[0]);
+}
+
+function generateAnalytics() {
+  const cacheStr = localStorage.getItem('gsheet_cache_data');
+  if (!cacheStr) {
+    showToast('Please Sync Cache first!', 'error');
+    return;
+  }
+  
+  const cache = JSON.parse(cacheStr);
+  if (cache.length === 0) {
+    showToast('No data to analyze', 'error');
+    return;
+  }
+  
+  cachedAnalyticsData = cache;
+  
+  renderHeatmap();
+  renderReturnAnalysis(cache);
+  renderSegmentation(cache);
+  renderLoyalists(cache);
+}
+
+function toggleHeatmap(metric) {
+  currentHeatmapMetric = metric;
+  document.getElementById('btnToggleIssued').classList.remove('active');
+  document.getElementById('btnToggleRedeemed').classList.remove('active');
+  if(metric === 'issued') document.getElementById('btnToggleIssued').classList.add('active');
+  else document.getElementById('btnToggleRedeemed').classList.add('active');
+  
+  if (cachedAnalyticsData) {
+    renderHeatmap();
+  }
+}
+
+function renderHeatmap() {
+  const data = cachedAnalyticsData || [];
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  const matrix = Array.from({length: 12}, () => Array(31).fill(0));
+  const now = new Date();
+  
+  data.forEach(entry => {
+    let d = null;
+    if (currentHeatmapMetric === 'issued') {
+      const decoded = decodeGiftCard(entry.code);
+      if (decoded) d = parseDateStr(decoded.date);
+    } else {
+      if ((entry.redeemStatus === 0 || entry.redeemStatus === '0') && entry.redeemDate) {
+        d = parseDateStr(entry.redeemDate);
+      }
+    }
+    
+    if (d) {
+      const diffMonths = (now.getFullYear() - d.getFullYear()) * 12 + now.getMonth() - d.getMonth();
+      if (diffMonths >= 0 && diffMonths < 12) {
+        const m = d.getMonth();
+        const day = d.getDate() - 1;
+        matrix[m][day] += parseFloat(entry.amount) || 0;
+      }
+    }
+  });
+
+  const series = [];
+  for (let m = 0; m < 12; m++) {
+    const daysData = [];
+    for (let d = 0; d < 31; d++) {
+      daysData.push({ x: (d+1).toString(), y: matrix[m][d] });
+    }
+    series.push({
+      name: monthNames[m],
+      data: daysData
+    });
+  }
+  
+  const isLight = document.body.classList.contains('light-mode');
+  const textColor = isLight ? '#64748b' : '#94a3b8';
+  const colorScale = '#8b5cf6';
+
+  const options = {
+    series: series.reverse(),
+    chart: { 
+      height: 300, 
+      type: 'heatmap', 
+      toolbar: { show: false }, 
+      background: 'transparent',
+      animations: { enabled: false }
+    },
+    dataLabels: { enabled: false },
+    theme: { mode: isLight ? 'light' : 'dark' },
+    colors: [colorScale],
+    xaxis: { labels: { style: { colors: textColor } } },
+    yaxis: { labels: { style: { colors: textColor } } }
+  };
+  
+  if (heatmapChartInst) heatmapChartInst.destroy();
+  heatmapChartInst = new ApexCharts(document.querySelector("#heatmapChart"), options);
+  heatmapChartInst.render();
+}
+
+function renderReturnAnalysis(cache) {
+  const counts = { 'Same Day': 0, '1-3 Days': 0, '4-7 Days': 0, '8-14 Days': 0, '15+ Days': 0 };
+  
+  cache.forEach(entry => {
+    if ((entry.redeemStatus === 0 || entry.redeemStatus === '0') && entry.redeemDate) {
+      const decoded = decodeGiftCard(entry.code);
+      if (decoded && decoded.date) {
+        const issueD = parseDateStr(decoded.date);
+        const redeemD = parseDateStr(entry.redeemDate);
+        if (issueD && redeemD) {
+          const diffTime = Math.abs(redeemD - issueD);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays === 0) counts['Same Day']++;
+          else if (diffDays <= 3) counts['1-3 Days']++;
+          else if (diffDays <= 7) counts['4-7 Days']++;
+          else if (diffDays <= 14) counts['8-14 Days']++;
+          else counts['15+ Days']++;
+        }
+      }
+    }
+  });
+
+  const isLight = document.body.classList.contains('light-mode');
+  const textColor = isLight ? '#64748b' : '#94a3b8';
+
+  const options = {
+    series: [{ name: 'Redemptions', data: Object.values(counts) }],
+    chart: { type: 'bar', height: 280, toolbar: { show: false }, background: 'transparent' },
+    theme: { mode: isLight ? 'light' : 'dark' },
+    plotOptions: { bar: { borderRadius: 4, horizontal: false } },
+    colors: ['#8b5cf6'],
+    dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+    xaxis: { categories: Object.keys(counts), labels: { style: { colors: textColor } } },
+    yaxis: { labels: { style: { colors: textColor } } }
+  };
+
+  if (returnChartInst) returnChartInst.destroy();
+  returnChartInst = new ApexCharts(document.querySelector("#returnChart"), options);
+  returnChartInst.render();
+}
+
+function renderSegmentation(cache) {
+  const mobCounts = {};
+  cache.forEach(c => {
+    mobCounts[c.mobile] = (mobCounts[c.mobile] || 0) + 1;
+  });
+  
+  let newCust = 0;
+  let repeatCust = 0;
+  Object.values(mobCounts).forEach(count => {
+    if (count === 1) newCust++;
+    else repeatCust++;
+  });
+
+  const isLight = document.body.classList.contains('light-mode');
+  const textColor = isLight ? '#64748b' : '#94a3b8';
+
+  const options = {
+    series: [newCust, repeatCust],
+    labels: ['New Customers', 'Repeat Customers'],
+    chart: { type: 'pie', height: 280, background: 'transparent' },
+    theme: { mode: isLight ? 'light' : 'dark' },
+    colors: ['#10b981', '#8b5cf6'],
+    legend: { position: 'bottom', labels: { colors: textColor } },
+    stroke: { show: false }
+  };
+
+  if (segmentChartInst) segmentChartInst.destroy();
+  segmentChartInst = new ApexCharts(document.querySelector("#segmentChart"), options);
+  segmentChartInst.render();
+}
+
+function renderLoyalists(cache) {
+  const mobCounts = {};
+  cache.forEach(c => {
+    mobCounts[c.mobile] = (mobCounts[c.mobile] || 0) + 1;
+  });
+  
+  const sorted = Object.entries(mobCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+    
+  const list = document.getElementById('loyalistsList');
+  if (sorted.length === 0) {
+    list.innerHTML = '<div class="empty-state"><p>No loyalists found.</p></div>';
+    return;
+  }
+  
+  list.innerHTML = '';
+  sorted.forEach((item, index) => {
+    const rank = index + 1;
+    const rankDisplay = rank === 1 ? '👑' : '#' + rank;
+    list.innerHTML += `
+      <div class="loyalist-item">
+        <div class="loyalist-rank">${rankDisplay}</div>
+        <div class="loyalist-mobile">${item[0]}</div>
+        <div class="loyalist-count">${item[1]} Entries</div>
+      </div>
+    `;
+  });
+}
+
+// ══════════════════════════════════════════════
+//  WHATSAPP & SMS TEMPLATES (Hardcoded)
+// ══════════════════════════════════════════════
+
+// -- Generating --
+function buildWhatsappGenerate(number, code, amount, date, time, message) {
+  return `https://api.whatsapp.com/send?phone=91${number}&text=%2AKrishna%20Book%20Store%2A%F0%9F%93%9A%F0%9F%8E%92%F0%9F%96%8A%EF%B8%8F%0A%0A%23%E2%83%A3%20Gift%20Card%20Code%20%3A%20${encodeURIComponent(code)}%0A%F0%9F%92%B0%C2%A0Gift%20Card%20Amount%20%3A%20%E2%82%B9${encodeURIComponent(amount)}%0A%F0%9F%97%93%EF%B8%8F%20Date%20%3A%20${encodeURIComponent(date)}%0A%E2%8F%B0%20Time%20%3A%20${encodeURIComponent(time)}%0A%E2%9C%89%EF%B8%8F%20${encodeURIComponent(message)}%0A%0A%E2%9D%A4%EF%B8%8F%20Instapage%20%3A%20https%3A%2F%2Finstagram.com%2Fkrishnabookcentre%0A%E2%98%8E%EF%B8%8F%20Phone%20No%3A%20%2B919827640600`;
+}
+
+function buildSmsGenerate(number, code, amount, date, time, message) {
+  return `sms:91${number}&body=%2AKrishna%20Book%20Store%2A%F0%9F%93%9A%F0%9F%8E%92%F0%9F%96%8A%EF%B8%8F%0A%0A%23%E2%83%A3%20Gift%20Card%20Code%20%3A%20${encodeURIComponent(code)}%0A%F0%9F%92%B0%C2%A0Gift%20Card%20Amount%20%3A%20%E2%82%B9${encodeURIComponent(amount)}%0A%F0%9F%97%93%EF%B8%8F%20Date%20%3A%20${encodeURIComponent(date)}%0A%E2%8F%B0%20Time%20%3A%20${encodeURIComponent(time)}%0A%E2%9C%89%EF%B8%8F%20${encodeURIComponent(message)}%0A%0A%E2%9D%A4%EF%B8%8F%20Instapage%20%3A%20https%3A%2F%2Finstagram.com%2Fkrishnabookcentre%0A%E2%98%8E%EF%B8%8F%20Phone%20No%3A%20%2B919827640600`;
+}
+
+function buildTelegramGenerate(number, code, amount, date, time, message) {
+  return `https://t.me/+91${number}?text=%2AKrishna%20Book%20Store%2A%F0%9F%93%9A%F0%9F%8E%92%F0%9F%96%8A%EF%B8%8F%0A%0A%23%E2%83%A3%20Gift%20Card%20Code%20%3A%20${encodeURIComponent(code)}%0A%F0%9F%92%B0%C2%A0Gift%20Card%20Amount%20%3A%20%E2%82%B9${encodeURIComponent(amount)}%0A%F0%9F%97%93%EF%B8%8F%20Date%20%3A%20${encodeURIComponent(date)}%0A%E2%8F%B0%20Time%20%3A%20${encodeURIComponent(time)}%0A%E2%9C%89%EF%B8%8F%20${encodeURIComponent(message)}%0A%0A%E2%9D%A4%EF%B8%8F%20Instapage%20%3A%20https%3A%2F%2Finstagram.com%2Fkrishnabookcentre%0A%E2%98%8E%EF%B8%8F%20Phone%20No%3A%20%2B919827640600`;
+}
+
+// -- Redeeming --
+function buildWhatsappRedeem(number, code, amount, message) {
+  return `https://api.whatsapp.com/send?phone=91${number}&text=%2AKrishna%20Book%20Store%2A%F0%9F%93%9A%F0%9F%8E%92%F0%9F%96%8A%EF%B8%8F%0A%0A%23%E2%83%A3%20Your%20Gift%20card%20${encodeURIComponent(code)}%20has%20been%20Successfully%20Redeemed%0A%F0%9F%92%B0%C2%A0Gift%20Card%20Amount%20%3A%20%E2%82%B9${encodeURIComponent(amount)}%0A%E2%9C%89%EF%B8%8F%20${encodeURIComponent(message)}%0A%0A%E2%9D%A4%EF%B8%8F%20Instapage%20%3A%20https%3A%2F%2Finstagram.com%2Fkrishnabookcentre%0A%E2%98%8E%EF%B8%8F%20Phone%20No%3A%20%2B919827640600`;
+}
+
+function buildSmsRedeem(number, code, amount, message) {
+  return `sms:+91${number}?body=%2AKrishna%20Book%20Store%2A%F0%9F%93%9A%F0%9F%8E%92%F0%9F%96%8A%EF%B8%8F%0A%0A%23%E2%83%A3%20Your%20Gift%20card%20${encodeURIComponent(code)}%20has%20been%20Successfully%20Redeemed%0A%F0%9F%92%B0%C2%A0Gift%20Card%20Amount%20%3A%20%E2%82%B9${encodeURIComponent(amount)}%0A%E2%9C%89%EF%B8%8F%20${encodeURIComponent(message)}%0A%0A%E2%9D%A4%EF%B8%8F%20Instapage%20%3A%20https%3A%2F%2Finstagram.com%2Fkrishnabookcentre%0A%E2%98%8E%EF%B8%8F%20Phone%20No%3A%20%2B919827640600`;
+}
+
+function buildTelegramRedeem(number, code, amount, message) {
+  return `https://t.me/+91${number}?text=%2AKrishna%20Book%20Store%2A%F0%9F%93%9A%F0%9F%8E%92%F0%9F%96%8A%EF%B8%8F%0A%0A%23%E2%83%A3%20Your%20Gift%20card%20${encodeURIComponent(code)}%20has%20been%20Successfully%20Redeemed%0A%F0%9F%92%B0%C2%A0Gift%20Card%20Amount%20%3A%20%E2%82%B9${encodeURIComponent(amount)}%0A%E2%9C%89%EF%B8%8F%20${encodeURIComponent(message)}%0A%0A%E2%9D%A4%EF%B8%8F%20Instapage%20%3A%20https%3A%2F%2Finstagram.com%2Fkrishnabookcentre%0A%E2%98%8E%EF%B8%8F%20Phone%20No%3A%20%2B919827640600`;
+}
