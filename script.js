@@ -57,19 +57,17 @@ function navigate(page) {
     }
   }
 
-  const btnSync = document.getElementById('btn-sync-cache');
-  if (page === 'admin') {
-    if (btnSync) btnSync.style.display = 'none';
-  } else {
-    if (btnSync) btnSync.style.display = '';
-  }
+  // Sync Cache button is now visible on ALL pages including admin
 
   if (page === 'entries') {
     entriesOffset = 0;
     document.getElementById('entriesList').innerHTML = '';
     loadEntries();
   }
-  if (page === 'admin') loadAdminStats();
+  if (page === 'admin') {
+    loadAdminStats();
+    generateAnalytics();
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -267,10 +265,15 @@ async function syncCache() {
     localStorage.setItem('gsheet_cache_data', JSON.stringify(allData));
     showToast('Sync complete! Data cached.', 'success');
     
+    // Refresh whichever page is currently active
     if (document.getElementById('section-entries').classList.contains('active')) {
       entriesOffset = 0;
       document.getElementById('entriesList').innerHTML = '';
       loadEntries();
+    }
+    if (document.getElementById('section-admin').classList.contains('active')) {
+      loadAdminStats();
+      generateAnalytics();
     }
   } catch (err) {
     showToast('Failed to sync data', 'error');
@@ -540,13 +543,13 @@ async function loadEntries() {
       const card = document.createElement('div');
       card.className = 'entry-row';
       card.innerHTML = `
-        <span class="col-code" data-label="Code">${entry.code}</span>
-        <span data-label="Mobile">${entry.mobile}</span>
-        <span data-label="Amount">₹${entry.amount}</span>
-        <span data-label="Issue Date">${decoded ? decoded.date : '—'}</span>
-        <span class="msg-box" data-label="Message">${entry.message}</span>
-        <span data-label="Status"><span class="badge ${isRedeemed ? 'badge-redeemed' : 'badge-active'}">${isRedeemed ? 'Redeemed' : 'Active'}</span></span>
-        <span data-label="Redeemed On">${isRedeemed && entry.redeemDate ? entry.redeemDate : '—'}</span>
+        <span class="col-code">${entry.code}</span>
+        <span>${entry.mobile}</span>
+        <span>₹${entry.amount}</span>
+        <span>${decoded ? decoded.date : '—'}</span>
+        <span class="msg-box">${entry.message}</span>
+        <span><span class="badge ${isRedeemed ? 'badge-redeemed' : 'badge-active'}">${isRedeemed ? 'Redeemed' : 'Active'}</span></span>
+        <span>${isRedeemed && entry.redeemDate ? entry.redeemDate : '—'}</span>
       `;
       list.appendChild(card);
     });
@@ -566,34 +569,66 @@ function loadMoreEntries() {
 }
 
 // ══════════════════════════════════════════════
-//  ADMIN STATS
+//  ADMIN STATS (from cache)
 // ══════════════════════════════════════════════
-async function loadAdminStats() {
+function loadAdminStats() {
+  const cacheStr = localStorage.getItem('gsheet_cache_data');
+  if (!cacheStr) {
+    showToast('No cached data. Please tap Sync Cache first!', 'error');
+    return;
+  }
+
   try {
-    const resp = await apiCall({ action: 'getAdminStats' });
-    if (resp.success) {
-      const s = resp.stats;
-      document.getElementById('statCustomers').textContent = s.totalCustomers;
-      document.getElementById('statTotalAmount').textContent = '₹' + s.totalAmountIssued.toLocaleString('en-IN');
-      document.getElementById('statTodayEntries').textContent = s.todayEntries;
-      document.getElementById('statTodayAmount').textContent = '₹' + s.todayAmount.toLocaleString('en-IN');
-      document.getElementById('statAvgBilling').textContent = '₹' + s.averageBilling.toLocaleString('en-IN');
-      document.getElementById('statClaimed').textContent = '₹' + s.totalClaimed.toLocaleString('en-IN');
-      document.getElementById('statRemaining').textContent = '₹' + s.totalRemaining.toLocaleString('en-IN');
+    const cache = JSON.parse(cacheStr);
+    if (cache.length === 0) {
+      showToast('Cache is empty. Please Sync Cache.', 'error');
+      return;
     }
-    
-    // Compute Conversion KPI from cache
-    const cacheStr = localStorage.getItem('gsheet_cache_data');
-    if (cacheStr) {
-      const cache = JSON.parse(cacheStr);
-      if (cache.length > 0) {
-        const redeemed = cache.filter(i => i.redeemStatus === 0 || i.redeemStatus === '0').length;
-        const conv = ((redeemed / cache.length) * 100).toFixed(1);
-        document.getElementById('statConversion').textContent = conv + '%';
+
+    // Unique customers by mobile
+    const uniqueMobiles = new Set(cache.map(e => e.mobile));
+    document.getElementById('statCustomers').textContent = uniqueMobiles.size;
+
+    // Total amount issued
+    const totalIssued = cache.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+    document.getElementById('statTotalAmount').textContent = '₹' + totalIssued.toLocaleString('en-IN');
+
+    // Today's entries & amount
+    const today = new Date();
+    const todayStr = String(today.getDate()).padStart(2, '0') + '/' + String(today.getMonth() + 1).padStart(2, '0') + '/' + today.getFullYear();
+    let todayEntries = 0;
+    let todayAmount = 0;
+    cache.forEach(e => {
+      const decoded = decodeGiftCard(e.code);
+      if (decoded && decoded.date === todayStr) {
+        todayEntries++;
+        todayAmount += parseFloat(e.amount) || 0;
       }
-    }
+    });
+    document.getElementById('statTodayEntries').textContent = todayEntries;
+    document.getElementById('statTodayAmount').textContent = '₹' + todayAmount.toLocaleString('en-IN');
+
+    // Average billing
+    const avgBilling = cache.length > 0 ? Math.round(totalIssued / cache.length) : 0;
+    document.getElementById('statAvgBilling').textContent = '₹' + avgBilling.toLocaleString('en-IN');
+
+    // Claimed (redeemed) amount
+    const claimed = cache
+      .filter(e => e.redeemStatus === 0 || e.redeemStatus === '0')
+      .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+    document.getElementById('statClaimed').textContent = '₹' + claimed.toLocaleString('en-IN');
+
+    // Profit (remaining = issued - claimed)
+    const remaining = totalIssued - claimed;
+    document.getElementById('statRemaining').textContent = '₹' + remaining.toLocaleString('en-IN');
+
+    // Conversion KPI
+    const redeemedCount = cache.filter(e => e.redeemStatus === 0 || e.redeemStatus === '0').length;
+    const conv = cache.length > 0 ? ((redeemedCount / cache.length) * 100).toFixed(1) : '0.0';
+    document.getElementById('statConversion').textContent = conv + '%';
+
   } catch (err) {
-    showToast('Failed to load stats', 'error');
+    showToast('Error reading cache data', 'error');
   }
 }
 
@@ -606,48 +641,7 @@ let segmentChartInst = null;
 let currentHeatmapMetric = 'issued';
 let cachedAnalyticsData = null;
 
-async function calculateAdminPage() {
-  const btn = document.getElementById('btnAdminCalc');
-  const originalHtml = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Loading…';
-
-  try {
-    // 1. Fetch base admin stats directly from backend
-    await loadAdminStats();
-
-    // 2. Refresh entire local cache for advanced analytics processing
-    let allData = [];
-    let offset = 0;
-    let hasMore = true;
-    while(hasMore) {
-      const resp = await apiCall({ action: 'getAllEntries', offset: offset });
-      if(resp.success) {
-        if (!resp.data || resp.data.length === 0) break;
-        allData = allData.concat(resp.data);
-        offset += resp.data.length;
-        hasMore = resp.hasMore === true || resp.hasMore === 'true';
-        if (offset > 50000) break;
-      } else {
-        throw new Error('Cache fetch failed');
-      }
-    }
-    
-    if (allData.length > 0) {
-      localStorage.setItem('gsheet_cache_data', JSON.stringify(allData));
-    }
-
-    // 3. Generate advanced charts using the newly downloaded dataset
-    generateAnalytics();
-
-    showToast('Admin Dashboard updated!', 'success');
-  } catch (e) {
-    showToast('Error updating dashboard', 'error');
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = originalHtml;
-}
+// calculateAdminPage removed — admin now uses Sync Cache button
 
 function parseDateStr(str) {
   if(!str) return null;
