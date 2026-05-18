@@ -546,7 +546,7 @@ async function loadEntries() {
         <span data-label="Issue Date">${decoded ? decoded.date : '—'}</span>
         <span class="msg-box" data-label="Message">${entry.message}</span>
         <span data-label="Status"><span class="badge ${isRedeemed ? 'badge-redeemed' : 'badge-active'}">${isRedeemed ? 'Redeemed' : 'Active'}</span></span>
-        <span data-label="Redeem Date">${isRedeemed && entry.redeemDate ? entry.redeemDate : '—'}</span>
+        <span data-label="Redeemed On">${isRedeemed && entry.redeemDate ? entry.redeemDate : '—'}</span>
       `;
       list.appendChild(card);
     });
