@@ -9,6 +9,7 @@ const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwTEptp9ZbLUlsbsE-vH
 // ── State ──
 let entriesOffset = 0;
 let generateLocked = false;
+let ledgerStatusFilter = 'all';
 
 // ── Theme Management ──
 function toggleTheme() {
@@ -213,6 +214,39 @@ function decodeGiftCard(code) {
   return { date: dateStr, time: timeStr, year: yr, month: mo, day: dt };
 }
 
+function getDecodedTimestamp(code) {
+  const decoded = decodeGiftCard(code);
+  if (!decoded) return 0;
+  const [day, month, year] = decoded.date.split('/').map(Number);
+  const [hour, min, sec] = decoded.time.split(':').map(Number);
+  return new Date(year, month - 1, day, hour, min, sec).getTime();
+}
+
+function printGeneratedCard() {
+  document.body.classList.add('printing-card');
+  window.print();
+}
+
+window.addEventListener('afterprint', () => {
+  document.body.classList.remove('printing-card');
+});
+
+function setLedgerStatusFilter(status) {
+  ledgerStatusFilter = status;
+  document.getElementById('filterStatusAll').classList.toggle('active', status === 'all');
+  document.getElementById('filterStatusActive').classList.toggle('active', status === 'active');
+  document.getElementById('filterStatusRedeemed').classList.toggle('active', status === 'redeemed');
+  entriesOffset = 0;
+  document.getElementById('entriesList').innerHTML = '';
+  loadEntries();
+}
+
+function handleLedgerFilters() {
+  entriesOffset = 0;
+  document.getElementById('entriesList').innerHTML = '';
+  loadEntries();
+}
+
 // ══════════════════════════════════════════════
 //  AUTO-UPDATE DATE / TIME
 // ══════════════════════════════════════════════
@@ -319,62 +353,95 @@ async function generateGiftCard() {
   const dateStr = String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0') + '/' + now.getFullYear();
   const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
 
-  // Lock button for 1 second
+  // Lock button and show loading spinner immediately
   generateLocked = true;
   const btn = document.getElementById('btnGenerate');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Generating…';
 
-  try {
-    const resp = await apiCall({ action: 'generate', mobile, code, message, amount });
-    if (resp.success) {
-      const cachedStr = localStorage.getItem('gsheet_cache_data');
-      if (cachedStr) {
-        try {
-          const cachedData = JSON.parse(cachedStr);
-          cachedData.unshift({ code, mobile, amount, message, redeemStatus: 1 });
-          localStorage.setItem('gsheet_cache_data', JSON.stringify(cachedData));
-        } catch(e) {}
+  let apiFinished = false;
+  let apiSuccess = false;
+  let apiError = null;
+
+  // 1. Trigger background database save asynchronously (non-blocking)
+  apiCall({ action: 'generate', mobile, code, message, amount })
+    .then(resp => {
+      apiFinished = true;
+      if (resp.success) {
+        apiSuccess = true;
+        // Update local cache asynchronously
+        const cachedStr = localStorage.getItem('gsheet_cache_data');
+        if (cachedStr) {
+          try {
+            const cachedData = JSON.parse(cachedStr);
+            cachedData.unshift({ code, mobile, amount, message, redeemStatus: 1 });
+            localStorage.setItem('gsheet_cache_data', JSON.stringify(cachedData));
+          } catch(e) {}
+        }
+        showToast('Gift card saved to database!', 'success');
+        
+        // Save complete: Re-enable the Generate button
+        generateLocked = false;
+        btn.disabled = false;
+        btn.innerHTML = 'Generate Code';
+      } else {
+        apiSuccess = false;
+        apiError = resp.error || 'Generation failed';
+        handleGenerationFailure(apiError);
       }
-      showToast('Gift card generated!', 'success');
+    })
+    .catch(err => {
+      apiFinished = true;
+      apiSuccess = false;
+      apiError = 'Network error. Check connection.';
+      handleGenerationFailure(apiError);
+    });
 
-      // WhatsApp link
-      const waLink = buildWhatsappGenerate(mobile, code, amount, dateStr, timeStr, message);
-      document.getElementById('modalGenWhatsapp').href = waLink;
-
-      // Telegram link
-      const tgLink = buildTelegramGenerate(mobile, code, amount, dateStr, timeStr, message);
-      document.getElementById('modalGenTelegram').href = tgLink;
-
-      // SMS link
-      const smsLink = buildSmsGenerate(mobile, code, amount, dateStr, timeStr, message);
-      document.getElementById('modalGenSms').href = smsLink;
-
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const cardDateStr = now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
-
-      document.getElementById('modalGenCodeDisplay').textContent = code;
-      document.getElementById('modalGenMsgDisplay').textContent = `"${message}"`;
-      document.getElementById('modalGenPhoneDisplay').textContent = `+91 ${mobile}`;
-      document.getElementById('modalGenAmountDisplay').textContent = `₹${amount}`;
-      document.getElementById('modalGenDateDisplay').textContent = cardDateStr;
-
-      document.getElementById('generateModal').classList.add('show');
-      
-      resetGenerate();
-    } else {
-      showToast(resp.error || 'Generation failed', 'error');
-    }
-  } catch (err) {
-    showToast('Network error. Check connection.', 'error');
-  }
-
-  // Unlock after 1 second
+  // 2. Open Success Popup after intentional 1 second UI delay (perceived speed increase)
   setTimeout(() => {
+    // If saving failed immediately during the 1-second delay, don't show the modal
+    if (apiFinished && !apiSuccess) {
+      return;
+    }
+
+    // Build the success popup content
+    const waLink = buildWhatsappGenerate(mobile, code, amount, dateStr, timeStr, message);
+    document.getElementById('modalGenWhatsapp').href = waLink;
+
+    const tgLink = buildTelegramGenerate(mobile, code, amount, dateStr, timeStr, message);
+    document.getElementById('modalGenTelegram').href = tgLink;
+
+    const smsLink = buildSmsGenerate(mobile, code, amount, dateStr, timeStr, message);
+    document.getElementById('modalGenSms').href = smsLink;
+
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const cardDateStr = now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+
+    document.getElementById('modalGenCodeDisplay').textContent = code;
+    document.getElementById('modalGenMsgDisplay').textContent = `"${message}"`;
+    document.getElementById('modalGenPhoneDisplay').textContent = `+91 ${mobile}`;
+    document.getElementById('modalGenAmountDisplay').textContent = `₹${amount}`;
+    document.getElementById('modalGenDateDisplay').textContent = cardDateStr;
+
+    // Open Modal
+    document.getElementById('generateModal').classList.add('show');
+    resetGenerate();
+
+    // If backend operation is still syncing, update button text to show progress
+    if (!apiFinished) {
+      btn.innerHTML = '<span class="spinner"></span> Syncing to database…';
+    }
+  }, 1000);
+
+  function handleGenerationFailure(errorMsg) {
+    showToast(errorMsg, 'error');
+    // Hide modal if shown
+    document.getElementById('generateModal').classList.remove('show');
+    // Unlock button to allow user to retry
     generateLocked = false;
     btn.disabled = false;
     btn.innerHTML = 'Generate Code';
-  }, 1000);
+  }
 }
 
 function resetGenerate() {
@@ -386,6 +453,7 @@ function resetGenerate() {
 
 function closeGenerateModal() {
   document.getElementById('generateModal').classList.remove('show');
+  document.body.classList.remove('printing-card');
 }
 
 // ══════════════════════════════════════════════
@@ -563,12 +631,52 @@ async function loadEntries() {
     const cachedStr = localStorage.getItem('gsheet_cache_data');
     if (cachedStr) {
       try {
-        const cachedData = JSON.parse(cachedStr);
+        let cachedData = JSON.parse(cachedStr);
+        fromCache = true;
+
+        // 1. Filter by Status
+        cachedData = cachedData.filter(item => {
+          const isRedeemed = (item.redeemStatus === 0 || item.redeemStatus === '0');
+          if (ledgerStatusFilter === 'active') {
+            return !isRedeemed;
+          } else if (ledgerStatusFilter === 'redeemed') {
+            return isRedeemed;
+          }
+          return true;
+        });
+
+        // 2. Filter by Search Query
+        const searchText = (document.getElementById('ledgerSearchInput')?.value || '').toLowerCase().trim();
+        if (searchText) {
+          cachedData = cachedData.filter(item => {
+            const codeMatch = item.code ? item.code.toLowerCase().includes(searchText) : false;
+            const mobileMatch = item.mobile ? String(item.mobile).toLowerCase().includes(searchText) : false;
+            const amountMatch = item.amount ? String(item.amount).toLowerCase().includes(searchText) : false;
+            return codeMatch || mobileMatch || amountMatch;
+          });
+        }
+
+        // 3. Sort
+        const sortOption = document.getElementById('ledgerSortSelect')?.value || 'date_newest';
+        cachedData.sort((a, b) => {
+          if (sortOption.startsWith('amount_')) {
+            const amtA = parseFloat(a.amount) || 0;
+            const amtB = parseFloat(b.amount) || 0;
+            return sortOption === 'amount_highest' ? amtB - amtA : amtA - amtB;
+          } else {
+            const timeA = getDecodedTimestamp(a.code);
+            const timeB = getDecodedTimestamp(b.code);
+            return sortOption === 'date_newest' ? timeB - timeA : timeA - timeB;
+          }
+        });
+
+        // 4. Paginate
         const pageSize = 50;
         dataToDisplay = cachedData.slice(entriesOffset, entriesOffset + pageSize);
         hasMore = (entriesOffset + pageSize) < cachedData.length;
-        fromCache = true;
-      } catch(e) {}
+      } catch(e) {
+        console.error(e);
+      }
     }
 
     if (!fromCache) {
@@ -584,6 +692,11 @@ async function loadEntries() {
     const list = document.getElementById('entriesList');
     if (dataToDisplay.length === 0 && entriesOffset === 0) {
       document.getElementById('entriesEmpty').style.display = '';
+      if (!cachedStr) {
+        document.getElementById('entriesEmpty').querySelector('p').textContent = 'No cached data. Please click the Sync Cache button at the top of the page first!';
+      } else {
+        document.getElementById('entriesEmpty').querySelector('p').textContent = 'No records found matching filters';
+      }
       document.getElementById('loadMoreWrap').style.display = 'none';
       btn.disabled = false;
       btn.innerHTML = 'Load More';
