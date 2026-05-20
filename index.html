@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@500&display=swap"
     rel="stylesheet">
 
   <!-- Icons -->
@@ -39,7 +39,7 @@
           <div class="brand-logo-fallback" style="display:none;"><span class="material-icons-round">local_library</span>
           </div>
         </div>
-        <span class="brand-text">Book Store</span>
+        <span class="brand-text">Krishna Book Store</span>
       </a>
       <div class="navbar-links">
         <button class="nav-btn active" id="nav-home" onclick="navigate('home')">
@@ -86,14 +86,14 @@
               <div class="input-wrapper">
                 <span class="material-icons-round input-icon">phone</span>
                 <input type="tel" id="genMobile" placeholder="10-digit mobile number" maxlength="10"
-                  autocomplete="off" />
+                  autocomplete="off" inputmode="numeric" />
               </div>
             </div>
             <div class="input-group">
               <label for="genAmount">Amount (₹)</label>
               <div class="input-wrapper">
                 <span class="material-icons-round input-icon">currency_rupee</span>
-                <input type="number" id="genAmount" placeholder="Enter amount" min="1" autocomplete="off" />
+                <input type="text" id="genAmount" placeholder="Enter amount" autocomplete="off" inputmode="numeric" />
               </div>
             </div>
             <div class="input-group">
@@ -149,30 +149,37 @@
                 </button>
               </div>
 
-              <div class="result-bento">
-                <div class="bento-item">
-                  <span class="b-label">Status</span>
-                  <div id="resStatus" class="b-value">—</div>
+              <!-- Visual Gift Card Component -->
+              <div class="gift-card-demo" style="margin: 0 auto 24px;">
+                <div class="gift-card-header">
+                  <div>
+                    <div class="brand-title">Krishna Book Store</div>
+                    <div class="card-type">Gift Card</div>
+                  </div>
+                  <div class="status-badge active" id="resStatus">Active ✓</div>
                 </div>
-                <div class="bento-item">
-                  <span class="b-label">Amount</span>
-                  <div id="resAmount" class="b-value amount-text">—</div>
+                
+                <div class="gift-card-code-wrap">
+                  <div class="gift-card-code" id="resCodeDisplay">GIFT-XXXXX</div>
+                  <button class="btn-icon-only copy-btn" onclick="copyToClipboard('resCodeDisplay')" title="Copy Code">
+                    <span class="material-icons-round">content_copy</span>
+                  </button>
                 </div>
-                <div class="bento-item full-width">
-                  <span class="b-label">Mobile Number</span>
-                  <div id="resMobile" class="b-value">—</div>
+                
+                <div class="gift-card-meta-ribbon">
+                  <div class="gift-card-msg" id="resMsgDisplay">"Thank You, Visit Again"</div>
+                  <div class="gift-card-phone" id="resPhoneDisplay">+91 XXXXX XXXXX</div>
                 </div>
-                <div class="bento-item">
-                  <span class="b-label">Issue Date</span>
-                  <div id="resDate" class="b-value">—</div>
-                </div>
-                <div class="bento-item">
-                  <span class="b-label">Issue Time</span>
-                  <div id="resTime" class="b-value">—</div>
-                </div>
-                <div class="bento-item full-width msg-box">
-                  <span class="b-label">Message</span>
-                  <div id="resMessage" class="b-value">—</div>
+                
+                <div class="gift-card-footer">
+                  <div>
+                    <div class="gift-card-label" id="resBalanceLabel">Balance</div>
+                    <div class="gift-card-amount" id="resAmountDisplay">₹0</div>
+                  </div>
+                  <div>
+                    <div class="gift-card-label" id="resDateLabel">Issued</div>
+                    <div class="gift-card-date" id="resDateDisplay">--/--/----</div>
+                  </div>
                 </div>
               </div>
 
@@ -199,18 +206,9 @@
           </div>
         </div>
 
-        <div class="table-container">
-          <div class="entries-header" id="entriesHeader">
-            <span>Code</span>
-            <span>Mobile</span>
-            <span>Amount</span>
-            <span>Issued</span>
-            <span>Message</span>
-            <span>Status</span>
-            <span>Redeemed On</span>
-          </div>
-          <div class="entries-list" id="entriesList">
-            <!-- Dynamically populated -->
+        <div class="entries-grid-container">
+          <div class="entries-grid" id="entriesList">
+            <!-- Dynamically populated with visual gift cards -->
           </div>
           <div class="load-more-wrap" id="loadMoreWrap" style="display:none;">
             <button class="btn btn-outline btn-large" id="btnLoadMore" onclick="loadMoreEntries()">Load More</button>
@@ -356,21 +354,45 @@
   <!-- ── Modals ── -->
   <!-- Generate Success Modal -->
   <div class="modal-overlay" id="generateModal">
-    <div class="modal-card glass-panel">
+    <div class="modal-card glass-panel" style="max-width: 480px; padding: 32px 24px;">
       <button class="btn-icon-only modal-close" onclick="closeGenerateModal()">
         <span class="material-icons-round">close</span>
       </button>
-      <div class="modal-illustration icon-primary">
-        <span class="material-icons-round">redeem</span>
-      </div>
-      <h2>Card Generated!</h2>
-      <p>Share this gift card with the customer securely.</p>
+      <h2 style="font-size: 1.6rem; margin-bottom: 4px;">Card Generated!</h2>
+      <p style="margin-bottom: 20px; font-size: 0.95rem;">Share this gift card with the customer securely.</p>
 
-      <div class="code-display-wrap">
-        <div class="generated-code" id="modalGenCodeDisplay">GIFT-XXXXX</div>
-        <button class="btn-icon-only copy-btn" onclick="copyToClipboard('modalGenCodeDisplay')" title="Copy Code">
-          <span class="material-icons-round" style="font-size: 1rem;">content_copy</span>
-        </button>
+      <!-- Visual Gift Card Component -->
+      <div class="gift-card-demo" style="margin: 0 auto 24px;">
+        <div class="gift-card-header">
+          <div>
+            <div class="brand-title">Krishna Book Store</div>
+            <div class="card-type">Gift Card</div>
+          </div>
+          <div class="status-badge active" id="modalCardStatus">Active ✓</div>
+        </div>
+        
+        <div class="gift-card-code-wrap">
+          <div class="gift-card-code" id="modalGenCodeDisplay">GIFT-XXXXX</div>
+          <button class="btn-icon-only copy-btn" onclick="copyToClipboard('modalGenCodeDisplay')" title="Copy Code">
+            <span class="material-icons-round">content_copy</span>
+          </button>
+        </div>
+        
+        <div class="gift-card-meta-ribbon">
+          <div class="gift-card-msg" id="modalGenMsgDisplay">"Thank You, Visit Again"</div>
+          <div class="gift-card-phone" id="modalGenPhoneDisplay">+91 XXXXX XXXXX</div>
+        </div>
+        
+        <div class="gift-card-footer">
+          <div>
+            <div class="gift-card-label">Balance</div>
+            <div class="gift-card-amount" id="modalGenAmountDisplay">₹0</div>
+          </div>
+          <div>
+            <div class="gift-card-label">Issued</div>
+            <div class="gift-card-date" id="modalGenDateDisplay">--/--/----</div>
+          </div>
+        </div>
       </div>
 
       <div class="share-actions">
@@ -420,6 +442,9 @@
   <script>
     function copyToClipboard(elementId) {
       const text = document.getElementById(elementId).innerText;
+      copyText(text);
+    }
+    function copyText(text) {
       navigator.clipboard.writeText(text).then(() => {
         if (typeof showToast === 'function') {
           showToast('Code copied!', 'success');
