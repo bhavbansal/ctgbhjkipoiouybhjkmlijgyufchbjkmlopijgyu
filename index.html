@@ -198,11 +198,30 @@
     <!-- ═══════ ALL ENTRIES PAGE ═══════ -->
     <section class="section" id="section-entries">
       <div class="card glass-panel entries-card">
-        <div class="card-header sticky-header">
-          <div class="icon-wrap icon-tertiary"><span class="material-icons-round">format_list_bulleted</span></div>
-          <div class="header-text">
-            <h2>Ledger</h2>
-            <p>Comprehensive list of all generated gift cards</p>
+        <div class="ledger-controls">
+          <div class="ledger-search-box">
+            <div class="input-wrapper">
+              <span class="material-icons-round input-icon">search</span>
+              <input type="text" id="ledgerSearchInput" placeholder="Search code, mobile, amount..." oninput="handleLedgerFilters()" autocomplete="off">
+            </div>
+          </div>
+          
+          <div class="ledger-actions-group">
+            <div class="segmented-control">
+              <button class="seg-btn active" id="filterStatusAll" onclick="setLedgerStatusFilter('all')">All</button>
+              <button class="seg-btn" id="filterStatusActive" onclick="setLedgerStatusFilter('active')">Active</button>
+              <button class="seg-btn" id="filterStatusRedeemed" onclick="setLedgerStatusFilter('redeemed')">Redeemed</button>
+            </div>
+            
+            <div class="sort-select-wrapper">
+              <span class="material-icons-round sort-icon">sort</span>
+              <select id="ledgerSortSelect" onchange="handleLedgerFilters()">
+                <option value="date_newest" selected>Newest First</option>
+                <option value="date_oldest">Oldest First</option>
+                <option value="amount_highest">Highest Amount</option>
+                <option value="amount_lowest">Lowest Amount</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -396,6 +415,10 @@
       </div>
 
       <div class="share-actions">
+        <button class="btn-share print" onclick="printGeneratedCard()">
+          <span class="material-icons-round">print</span>
+          Print
+        </button>
         <a class="btn-share wa" id="modalGenWhatsapp" href="#" target="_blank">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
             <path
