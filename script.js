@@ -37,6 +37,25 @@ function initTheme() {
 }
 initTheme();
 
+// Restrict Customer Mobile and Amount input fields to digits only
+function setupNumericInputs() {
+  const genMobile = document.getElementById('genMobile');
+  const genAmount = document.getElementById('genAmount');
+  
+  if (genMobile) {
+    genMobile.addEventListener('input', function() {
+      this.value = this.value.replace(/\D/g, '');
+    });
+  }
+  
+  if (genAmount) {
+    genAmount.addEventListener('input', function() {
+      this.value = this.value.replace(/\D/g, '');
+    });
+  }
+}
+setupNumericInputs();
+
 // ══════════════════════════════════════════════
 //  NAVIGATION
 // ══════════════════════════════════════════════
@@ -331,7 +350,15 @@ async function generateGiftCard() {
       const smsLink = buildSmsGenerate(mobile, code, amount, dateStr, timeStr, message);
       document.getElementById('modalGenSms').href = smsLink;
 
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const cardDateStr = now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+
       document.getElementById('modalGenCodeDisplay').textContent = code;
+      document.getElementById('modalGenMsgDisplay').textContent = `"${message}"`;
+      document.getElementById('modalGenPhoneDisplay').textContent = `+91 ${mobile}`;
+      document.getElementById('modalGenAmountDisplay').textContent = `₹${amount}`;
+      document.getElementById('modalGenDateDisplay').textContent = cardDateStr;
+
       document.getElementById('generateModal').classList.add('show');
       
       resetGenerate();
@@ -399,20 +426,25 @@ async function searchGiftCard() {
 
     if (d) {
       const decoded = decodeGiftCard(d.code);
-
-      document.getElementById('resMobile').textContent = d.mobile;
-      document.getElementById('resAmount').textContent = '₹' + d.amount;
-      document.getElementById('resDate').textContent = decoded ? decoded.date : '—';
-      document.getElementById('resTime').textContent = decoded ? decoded.time : '—';
-      document.getElementById('resMessage').textContent = d.message;
-
       const isRedeemed = (d.redeemStatus === 0 || d.redeemStatus === '0');
-      document.getElementById('resStatus').innerHTML = isRedeemed
-        ? '<span class="badge badge-redeemed">Redeemed</span>'
-        : '<span class="badge badge-active">Active</span>';
+
+      document.getElementById('resCodeDisplay').textContent = d.code;
+      document.getElementById('resPhoneDisplay').textContent = '+91 ' + d.mobile;
+      document.getElementById('resAmountDisplay').textContent = '₹' + d.amount;
+      document.getElementById('resMsgDisplay').textContent = `"${d.message}"`;
+      document.getElementById('resMsgDisplay').title = d.message;
+
+      const statusEl = document.getElementById('resStatus');
+      statusEl.textContent = isRedeemed ? 'Redeemed' : 'Active ✓';
+      statusEl.className = isRedeemed ? 'status-badge redeemed' : 'status-badge active';
+
+      document.getElementById('resBalanceLabel').textContent = isRedeemed ? 'Redeemed' : 'Balance';
+      document.getElementById('resDateLabel').textContent = isRedeemed ? 'Redeemed On' : 'Issued';
+      
+      const dateValue = isRedeemed && d.redeemDate ? formatCardDate(d.redeemDate) : (decoded ? formatCardDate(decoded.date) : '—');
+      document.getElementById('resDateDisplay').textContent = dateValue;
 
       // Redeem actions
-      const actions = document.getElementById('redeemActions');
       if (isRedeemed) {
         document.getElementById('btnRedeem').style.display = 'none';
       } else {
@@ -469,7 +501,12 @@ async function redeemGiftCard() {
         } catch(e) {}
       }
       showToast('Gift card redeemed successfully!', 'success');
-      document.getElementById('resStatus').innerHTML = '<span class="badge badge-redeemed">Redeemed</span>';
+      const statusEl = document.getElementById('resStatus');
+      statusEl.textContent = 'Redeemed';
+      statusEl.className = 'status-badge redeemed';
+      document.getElementById('resBalanceLabel').textContent = 'Redeemed';
+      document.getElementById('resDateLabel').textContent = 'Redeemed On';
+      document.getElementById('resDateDisplay').textContent = formatCardDate(new Date().toISOString());
       btn.style.display = 'none';
 
       // Open Modal and populate links
@@ -491,6 +528,23 @@ async function redeemGiftCard() {
 
   btn.disabled = false;
   btn.innerHTML = '✅ Redeem Card';
+}
+
+// Helper to format date string to "17 May 2025" style
+function formatCardDate(dateStr) {
+  if (!dateStr || dateStr === '—') return '—';
+  const clean = dateStr.split(' ')[0];
+  const parts = clean.split('/');
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const monthIdx = parseInt(parts[1], 10) - 1;
+    const year = parts[2];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    if (months[monthIdx]) {
+      return `${day} ${months[monthIdx]} ${year}`;
+    }
+  }
+  return dateStr;
 }
 
 // ══════════════════════════════════════════════
@@ -541,15 +595,45 @@ async function loadEntries() {
       const decoded = decodeGiftCard(entry.code);
       const isRedeemed = (entry.redeemStatus === 0 || entry.redeemStatus === '0');
       const card = document.createElement('div');
-      card.className = 'entry-row';
+      card.className = 'gift-card-demo';
+      
+      const statusText = isRedeemed ? 'Redeemed' : 'Active ✓';
+      const statusClass = isRedeemed ? 'status-badge redeemed' : 'status-badge active';
+      const balanceLabel = isRedeemed ? 'Redeemed' : 'Balance';
+      const dateLabel = isRedeemed ? 'Redeemed On' : 'Issued';
+      const dateValue = isRedeemed && entry.redeemDate ? formatCardDate(entry.redeemDate) : (decoded ? formatCardDate(decoded.date) : '—');
+      
       card.innerHTML = `
-        <span class="col-code">${entry.code}</span>
-        <span>${entry.mobile}</span>
-        <span>₹${entry.amount}</span>
-        <span>${decoded ? decoded.date : '—'}</span>
-        <span class="msg-box">${entry.message}</span>
-        <span><span class="badge ${isRedeemed ? 'badge-redeemed' : 'badge-active'}">${isRedeemed ? 'Redeemed' : 'Active'}</span></span>
-        <span>${isRedeemed && entry.redeemDate ? entry.redeemDate : '—'}</span>
+        <div class="gift-card-header">
+          <div>
+            <div class="brand-title">Krishna Book Store</div>
+            <div class="card-type">Gift Card</div>
+          </div>
+          <div class="${statusClass}">${statusText}</div>
+        </div>
+        
+        <div class="gift-card-code-wrap">
+          <div class="gift-card-code">${entry.code}</div>
+          <button class="btn-icon-only copy-btn" onclick="copyText('${entry.code}')" title="Copy Code">
+            <span class="material-icons-round">content_copy</span>
+          </button>
+        </div>
+        
+        <div class="gift-card-meta-ribbon">
+          <div class="gift-card-msg" title="${entry.message}">"${entry.message}"</div>
+          <div class="gift-card-phone">+91 ${entry.mobile}</div>
+        </div>
+        
+        <div class="gift-card-footer">
+          <div>
+            <div class="gift-card-label">${balanceLabel}</div>
+            <div class="gift-card-amount">₹${entry.amount}</div>
+          </div>
+          <div>
+            <div class="gift-card-label">${dateLabel}</div>
+            <div class="gift-card-date">${dateValue}</div>
+          </div>
+        </div>
       `;
       list.appendChild(card);
     });
