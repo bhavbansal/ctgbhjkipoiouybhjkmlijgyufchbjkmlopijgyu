@@ -2,112 +2,85 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Krishna Book Centre Gift Card</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Krishna Book Centre Gift Card SMS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
       margin: 0;
       padding: 0;
-      background: #f5f5f5;
-      color: #222;
-    }
-    .page {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 24px 16px 40px;
-    }
-    header {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-    header h1 {
-      margin: 0;
-      font-size: 1.8rem;
-      color: #1d3557;
-    }
-    header p {
-      margin: 8px 0 0;
-      color: #555;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
     }
     .card {
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
-      padding: 20px 18px;
-      margin-bottom: 24px;
-    }
-    .card h2 {
-      margin: 0 0 12px;
-      font-size: 1.4rem;
-      color: #e76f51;
-    }
-    .card p {
-      margin: 6px 0;
-      line-height: 1.5;
-    }
-    .btn-wrap {
+      background: white;
+      padding: 24px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      max-width: 420px;
+      width: 100%;
       text-align: center;
-      margin-top: 16px;
     }
-    .sms-btn {
+    h1 {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+    p {
+      font-size: 14px;
+      color: #555;
+      margin-top: 0;
+      margin-bottom: 20px;
+    }
+    a.sms-button {
       display: inline-block;
-      padding: 12px 22px;
-      border-radius: 999px;
-      background: #1d3557;
-      color: #ffffff;
+      background: #1e88e5;
+      color: #fff;
       text-decoration: none;
+      padding: 12px 18px;
+      border-radius: 6px;
+      font-size: 16px;
       font-weight: 600;
-      font-size: 0.98rem;
+      margin-bottom: 12px;
     }
-    .sms-btn:hover {
-      background: #16304d;
+    a.sms-link {
+      display: block;
+      margin-top: 8px;
+      color: #1e88e5;
+      text-decoration: underline;
+      word-break: break-all;
+      font-size: 13px;
     }
-    .footer-links {
-      text-align: center;
-      font-size: 0.9rem;
-      color: #444;
-    }
-    .footer-links a {
-      color: #1d3557;
-      text-decoration: none;
-      font-weight: 500;
+    .note {
+      font-size: 12px;
+      color: #777;
+      margin-top: 14px;
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <header>
-      <h1>Krishna Book Centre</h1>
-      <p>Send a pre‑filled SMS to generate or share a gift card.</p>
-    </header>
+  <div class="card">
+    <h1>Send Gift Card SMS</h1>
+    <p>Tap the button below to open your SMS app with a pre-filled gift card message for Krishna Book Centre.</p>
 
-    <div class="card">
-      <h2>Gift Card SMS</h2>
-      <p>
-        Tap the button below to open your SMS app with a pre‑filled message.
-        Replace the placeholders <code>&lt;code&gt;</code>, <code>&lt;amount&gt;</code>,
-        <code>&lt;date&gt;</code>, <code>&lt;time&gt;</code>, and <code>&lt;message&gt;</code> as needed.
-      </p>
+    <!-- Clickable button to open SMS app with body text -->
+    <a
+      class="sms-button"
+      href="sms:919826425086&body=%2AKrishna%20Book%20Centre%2A%F0%9F%93%9A%F0%9F%8E%92%F0%9F%96%8A%EF%B8%8F%0A%0A%23%E2%83%A3%20Gift%20Card%20Code%20%3A%20%3Ccode%3E%0A%F0%9F%92%B0%C2%A0Gift%20Card%20Amount%20%3A%20%E2%82%B9%3Camount%3E%0A%F0%9F%97%93%EF%B8%8F%20Date%20%3A%20%3Cdate%3E%0A%E2%8F%B0%20Time%20%3A%20%3Ctime%3E%0A%E2%9C%89%EF%B8%8F%20%3Cmessage%3E%0A%0A%E2%9D%A4%EF%B8%8F%20Instapage%20%3A%20https%3A%2F%2Finstagram.com%2Fkrishnabookcentre%0A%E2%98%8E%EF%B8%8F%20Phone">
+      Send SMS
+    </a>
 
-      <div class="btn-wrap">
-        <!-- SMS link with your encoded body -->
-        <a
-          class="sms-btn"
-          href="sms:919826425086&body=%2AKrishna%20Book%20Centre%2A%F0%9F%93%9A%F0%9F%8E%92%F0%9F%96%8A%EF%B8%8F%0A%0A%23%E2%83%A3%20Gift%20Card%20Code%20%3A%20%3Ccode%3E%0A%F0%9F%92%B0%C2%A0Gift%20Card%20Amount%20%3A%20%E2%82%B9%3Camount%3E%0A%F0%9F%97%93%EF%B8%8F%20Date%20%3A%20%3Cdate%3E%0A%E2%8F%B0%20Time%20%3A%20%3Ctime%3E%0A%E2%9C%89%EF%B8%8F%20%3Cmessage%3E%0A%0A%E2%9D%A4%EF%B8%8F%20Instapage%20%3A%20https%3A%2F%2Finstagram.com%2Fkrishnabookcentre%0A%E2%98%8E%EF%B8%8F%20Phone%20No%3A%20%2B919827640600">
-          Send Gift Card SMS
-        </a>
-      </div>
-    </div>
+    <!-- Optional: show the raw link as text as well -->
+    <a
+      class="sms-link"
+      href="sms:919826425086&body=%2AKrishna%20Book%20Centre%2A%F0%9F%93%9A%F0%9F%8E%92%F0%9F%96%8A%EF%B8%8F%0A%0A%23%E2%83%A3%20Gift%20Card%20Code%20%3A%20%3Ccode%3E%0A%F0%9F%92%B0%C2%A0Gift%20Card%20Amount%20%3A%20%E2%82%B9%3Camount%3E%0A%F0%9F%97%93%EF%B8%8F%20Date%20%3A%20%3Cdate%3E%0A%E2%8F%B0%20Time%20%3A%20%3Ctime%3E%0A%E2%9C%89%EF%B8%8F%20%3Cmessage%3E%0A%0A%E2%9D%A4%EF%B8%8F%20Instapage%20%3A%20https%3A%2F%2Finstagram.com%2Fkrishnabookcentre%0A%E2%98%8E%EF%B8%8F%20Phone">
+      sms:919826425086&body=... (click if button does not work)
+    </a>
 
-    <div class="card">
-      <h2>Contact & Social</h2>
-      <p>Instagram: <a href="https://instagram.com/krishnabookcentre" target="_blank">krishnabookcentre</a></p>
-      <p>Phone: <a href="tel:+919827640600">+91 98276 40600</a></p>
-    </div>
-
-    <div class="footer-links">
-      <p>&copy; Krishna Book Centre · All rights reserved</p>
+    <div class="note">
+      Note: This works on most modern phones that support SMS links.
     </div>
   </div>
 </body>
