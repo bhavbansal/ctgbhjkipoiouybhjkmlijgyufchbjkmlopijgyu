@@ -1,1 +1,183 @@
+/* Import Streamlit-like font */
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap');
 
+:root {
+    --primary-red: #ff4b4b;
+    --text-color: #31333F;
+    --bg-color: #ffffff;
+    --input-bg: #f0f2f6;
+    --border-radius: 0.5rem;
+    --font-family: 'Source Sans Pro', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family);
+    color: var(--text-color);
+    background-color: var(--bg-color);
+    line-height: 1.6;
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+.main-container {
+    width: 100%;
+    max-width: 700px;
+}
+
+/* Header & Text */
+.st-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.st-text {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Formula Box */
+.formula-box {
+    text-align: center;
+    margin: 1.5rem 0;
+    font-size: 1.1rem;
+    padding: 10px;
+}
+
+/* Table Styling */
+.st-block {
+    margin-bottom: 2rem;
+}
+
+.st-block h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.st-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    border: 1px solid #e6e6e6;
+}
+
+.st-table th, .st-table td {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #e6e6e6;
+}
+
+.st-table th {
+    font-weight: 600;
+    color: rgba(49, 51, 63, 0.6);
+}
+
+/* Input Widgets */
+.st-widget {
+    margin-bottom: 1.2rem;
+}
+
+.st-widget label {
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 0.4rem;
+    font-weight: 400;
+}
+
+input[type="number"], select {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--input-bg);
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    font-family: inherit;
+    font-size: 1rem;
+    color: var(--text-color);
+    transition: border-color 0.2s;
+}
+
+input[type="number"]:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-red);
+}
+
+/* Divider */
+.st-divider {
+    border: none;
+    border-top: 1px solid rgba(49, 51, 63, 0.1);
+    margin: 2rem 0;
+}
+
+/* Subject Row Layout */
+.subject-row {
+    margin-bottom: 1.5rem;
+}
+
+.subject-label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.row-inputs {
+    display: flex;
+    gap: 1rem;
+}
+
+.input-group {
+    flex: 1;
+}
+
+/* Button */
+.st-button-container {
+    margin-top: 2rem;
+}
+
+button {
+    background-color: var(--primary-red);
+    color: white;
+    border: 1px solid var(--primary-red);
+    padding: 0.5rem 1.2rem;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: 100%; 
+    max-width: 150px;
+}
+
+button:hover {
+    border-color: #ff2b2b;
+    background-color: #ff2b2b;
+}
+
+/* Results */
+#result-container {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #f0f2f6;
+    border-radius: var(--border-radius);
+    border-left: 5px solid var(--primary-red);
+}
+
+.hidden {
+    display: none;
+}
+
+/* Footer */
+footer {
+    margin-top: 4rem;
+    text-align: center;
+    color: rgba(49, 51, 63, 0.6);
+    font-size: 0.9rem;
+    padding-bottom: 2rem;
+}
