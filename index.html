@@ -1,285 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Billing & Delivery Management</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shyam Book Depot</title>
+  <meta name="description" content="Modern Point of Sale System – Shyam Book Depot">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="nav-brand">
-            <i class="fa-solid fa-graduation-cap"></i>
-            <span>Shyam Book Depo</span>
-        </div>
-        <ul class="nav-links">
-            <li><a href="#" data-page="home" class="active">Home</a></li>
-            <li><a href="#" data-page="entries">All Entries</a></li>
-            <li><a href="#" data-page="admin">Admin</a></li>
-        </ul>
-        <!-- Mobile Menu Toggle -->
-        <div class="menu-toggle"><i class="fa-solid fa-bars"></i></div>
+  <div id="app-container">
+    <nav class="top-nav">
+      <div class="nav-brand">
+        <i class="ph ph-storefront"></i>
+        <span>Shyam Book Depot</span>
+      </div>
+      <ul class="nav-menu">
+        <li><a href="#" class="nav-link active" data-view="home"><i class="ph ph-house"></i> Home</a></li>
+        <li><a href="#" class="nav-link" data-view="entries"><i class="ph ph-receipt"></i> Entries</a></li>
+        <li><a href="#" class="nav-link" data-view="admin"><i class="ph ph-lock-key"></i> Admin</a></li>
+      </ul>
     </nav>
-
-    <!-- Main Container -->
-    <main class="app-container">
-        
-        <!-- ================= HOME PAGE ================= -->
-        <section id="page-home" class="page-section active">
-            
-            <!-- Step 1: School Selection -->
-            <div id="school-selection" class="step-container">
-                <div class="section-header">
-                    <h2>Select a School</h2>
-                    <p>Choose the school to start a new invoice</p>
-                </div>
-                <div class="loader" id="school-loader"></div>
-                <div class="grid-box" id="schools-grid">
-                    <!-- Schools populated dynamically -->
-                </div>
-            </div>
-
-            <!-- Step 2: Class Selection -->
-            <div id="class-selection" class="step-container hidden">
-                <div class="section-header">
-                    <button class="back-btn" id="back-to-schools"><i class="fa-solid fa-arrow-left"></i> Back</button>
-                    <h2>Select a Class</h2>
-                    <p id="selected-school-name" class="subtitle"></p>
-                </div>
-                <div class="loader" id="class-loader"></div>
-                <div class="grid-box" id="classes-grid">
-                    <!-- Classes populated dynamically -->
-                </div>
-            </div>
-
-            <!-- Step 3: Invoice Entry Form -->
-            <div id="invoice-entry" class="step-container hidden">
-                <div class="section-header">
-                    <button class="back-btn" id="back-to-classes"><i class="fa-solid fa-arrow-left"></i> Back</button>
-                    <h2>New Invoice</h2>
-                    <p id="selected-class-name" class="subtitle"></p>
-                </div>
-
-                <form id="invoice-form" class="glass-panel">
-                    <!-- Books Category -->
-                    <div class="item-category">
-                        <h3><i class="fa-solid fa-book"></i> Books</h3>
-                        <div id="books-container" class="items-container">
-                            <!-- Items go here -->
-                        </div>
-                        <button type="button" class="add-item-btn" data-type="books"><i class="fa-solid fa-plus"></i> Add Book</button>
-                    </div>
-
-                    <!-- Notebooks Category -->
-                    <div class="item-category">
-                        <h3><i class="fa-solid fa-book-open"></i> Notebooks</h3>
-                        <div id="notebooks-container" class="items-container">
-                        </div>
-                        <button type="button" class="add-item-btn" data-type="notebooks"><i class="fa-solid fa-plus"></i> Add Notebook</button>
-                    </div>
-
-                    <!-- Others Category -->
-                    <div class="item-category">
-                        <h3><i class="fa-solid fa-box-open"></i> Other Items</h3>
-                        <div id="others-container" class="items-container">
-                        </div>
-                        <button type="button" class="add-item-btn" data-type="others"><i class="fa-solid fa-plus"></i> Add Item</button>
-                    </div>
-
-                    <!-- Customer Info -->
-                    <div class="customer-info-section">
-                        <h3><i class="fa-solid fa-user"></i> Customer Details</h3>
-                        <div class="input-group">
-                            <label for="customer-mobile">Mobile Number</label>
-                            <input type="tel" id="customer-mobile" required placeholder="Enter 10 digit number">
-                        </div>
-                        <div class="input-group">
-                            <label>Date</label>
-                            <input type="text" id="auto-date" readonly class="readonly-input">
-                        </div>
-                        <div class="input-group">
-                            <label>Time</label>
-                            <input type="text" id="auto-time" readonly class="readonly-input">
-                        </div>
-                        <div class="input-group full-width">
-                            <label for="customer-message">Message</label>
-                            <textarea id="customer-message" rows="3" placeholder="Optional message..."></textarea>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="primary-btn submit-invoice-btn" id="submit-invoice-btn">
-                        <i class="fa-solid fa-file-invoice"></i> Generate Invoice
-                    </button>
-                </form>
-            </div>
-        </section>
-
-        <!-- ================= ALL ENTRIES PAGE ================= -->
-        <section id="page-entries" class="page-section hidden">
-            <div class="section-header">
-                <h2>Deliveries Management</h2>
-            </div>
-            
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="pending">Pending Deliveries</button>
-                <button class="tab-btn" data-tab="delivered">Already Delivered</button>
-            </div>
-
-            <div class="tab-content active" id="tab-pending">
-                <div class="loader" id="pending-loader"></div>
-                <div class="entries-list" id="pending-entries-list">
-                    <!-- Pending entries accordion populated dynamically -->
-                </div>
-            </div>
-
-            <div class="tab-content" id="tab-delivered">
-                <div class="loader" id="delivered-loader"></div>
-                <div class="entries-list" id="delivered-entries-list">
-                    <!-- Delivered entries accordion populated dynamically -->
-                </div>
-            </div>
-        </section>
-
-        <!-- ================= ADMIN PAGE ================= -->
-        <section id="page-admin" class="page-section hidden">
-            
-            <!-- Login -->
-            <div id="admin-login" class="admin-login-container">
-                <div class="glass-panel login-panel">
-                    <h2>Admin Login</h2>
-                    <form id="login-form">
-                        <div class="input-group">
-                            <label for="admin-username">Username</label>
-                            <input type="text" id="admin-username" required>
-                        </div>
-                        <div class="input-group">
-                            <label for="admin-password">Password</label>
-                            <input type="password" id="admin-password" required>
-                        </div>
-                        <button type="submit" class="primary-btn">Login</button>
-                        <p id="login-error" class="error-msg hidden">Invalid credentials</p>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Dashboard -->
-            <div id="admin-dashboard" class="hidden">
-                <div class="dashboard-header">
-                    <h2>Analytics Dashboard</h2>
-                    <button class="outline-btn" id="logout-btn">Logout</button>
-                </div>
-                
-                <div class="loader" id="admin-loader"></div>
-
-                <div class="dashboard-content" id="dashboard-content-wrap">
-                    <!-- Stats Grid -->
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon"><i class="fa-solid fa-file-invoice"></i></div>
-                            <div class="stat-info">
-                                <h4 id="stat-total-invoices">0</h4>
-                                <p>Total Invoices</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon warning"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                            <div class="stat-info">
-                                <h4 id="stat-pending-items">0</h4>
-                                <p>Pending Items</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon success"><i class="fa-solid fa-check-circle"></i></div>
-                            <div class="stat-info">
-                                <h4 id="stat-delivered-items">0</h4>
-                                <p>Delivered Items</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon purple"><i class="fa-solid fa-indian-rupee-sign"></i></div>
-                            <div class="stat-info">
-                                <h4 id="stat-revenue">0</h4>
-                                <p>Total Revenue</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Management Sections -->
-                    <div class="management-grid" style="grid-template-columns: 1fr;">
-                        <!-- Schools & Classes Mgmt -->
-                        <div class="glass-panel mgmt-panel">
-                            <div class="mgmt-header">
-                                <h3>Schools & Classes Management</h3>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <button class="outline-btn add-school-btn" style="padding: 0.5rem 1rem; border-radius: 6px;"><i class="fa-solid fa-plus"></i> Add School</button>
-                                    <button class="outline-btn add-class-btn" style="padding: 0.5rem 1rem; border-radius: 6px;"><i class="fa-solid fa-plus"></i> Add Class</button>
-                                </div>
-                            </div>
-                            <ul class="mgmt-list" id="admin-schools-list">
-                                <!-- Admin schools and nested classes list -->
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Modals (Modals for CRUD operations, alerts) -->
     
-    <!-- Success Modal -->
-    <div class="modal-overlay hidden" id="success-modal">
-        <div class="modal-box glass-panel">
-            <div class="modal-icon success-icon"><i class="fa-solid fa-check-circle"></i></div>
-            <h3 id="success-title">Success!</h3>
-            <p id="success-msg">Operation completed successfully.</p>
-            <button class="primary-btn modal-close-btn">OK</button>
-        </div>
-    </div>
+    <main id="main-content">
+      <!-- Views injected here by app.js -->
+    </main>
+  </div>
 
-    <!-- Generic Input Modal -->
-    <div class="modal-overlay hidden" id="input-modal">
-        <div class="modal-box glass-panel">
-            <h3 id="input-modal-title">Enter Details</h3>
-            <form id="input-modal-form">
-                <div id="input-modal-fields"></div>
-                <div class="modal-actions">
-                    <button type="button" class="outline-btn modal-cancel-btn">Cancel</button>
-                    <button type="submit" class="primary-btn">Save</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Template for Item Row (used in JS) -->
-    <template id="item-row-template">
-        <div class="item-row fade-in">
-            <div class="input-group">
-                <input type="text" class="item-name" placeholder="Item Name" required>
-            </div>
-            <div class="input-group">
-                <input type="number" class="item-amount" placeholder="Amount" min="0" required>
-            </div>
-            <div class="input-group">
-                <input type="number" class="item-quantity" placeholder="Qty" min="1" value="1" required>
-            </div>
-            <div class="input-group">
-                <input type="text" class="item-id-num" placeholder="Identify Number">
-            </div>
-            <div class="input-group">
-                <input type="text" class="item-note" placeholder="Note">
-            </div>
-            <button type="button" class="remove-item-btn"><i class="fa-solid fa-trash"></i></button>
-        </div>
-    </template>
-
-    <script src="script.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
