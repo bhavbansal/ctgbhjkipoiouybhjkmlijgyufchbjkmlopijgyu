@@ -3,36 +3,270 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Shyam Book Depot — School book management and invoice system. Manage schools, classes, books, notebooks, and generate invoices effortlessly.">
+  <meta name="theme-color" content="#0F172A">
   <title>Shyam Book Depot</title>
-  <meta name="description" content="Modern Point of Sale System – Shyam Book Depot">
-  
-  <!-- Google Fonts: Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- Phosphor Icons -->
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app-container">
-    <nav class="top-nav">
-      <div class="nav-brand">
-        <i class="ph ph-storefront"></i>
-        <span>Shyam Book Depot</span>
+  <!-- NAVIGATION BAR (sticky) -->
+  <nav id="navbar">
+    <div class="nav-brand">
+      <span class="nav-logo">📚</span>
+      <span class="nav-title">Shyam Book Depot</span>
+    </div>
+    <div class="nav-links">
+      <a href="#" class="nav-link active" data-page="home" id="nav-home">
+        <span class="nav-link-icon">🏠</span>
+        <span class="nav-link-text">Home</span>
+      </a>
+      <a href="#" class="nav-link" data-page="entries" id="nav-entries">
+        <span class="nav-link-icon">📋</span>
+        <span class="nav-link-text">Entries</span>
+      </a>
+      <a href="#" class="nav-link" data-page="admin" id="nav-admin">
+        <span class="nav-link-icon">⚙️</span>
+        <span class="nav-link-text">Admin</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main id="main-content">
+
+    <!-- ===== HOME PAGE ===== -->
+    <section id="page-home" class="page active">
+      <!-- School Selection View -->
+      <div id="school-selection">
+        <h1 class="page-title">Select a School</h1>
+        <p class="page-subtitle">Choose a school to start creating an invoice</p>
+        <div id="schools-grid" class="card-grid"></div>
       </div>
-      <ul class="nav-menu">
-        <li><a href="#" class="nav-link active" data-view="home"><i class="ph ph-house"></i> Home</a></li>
-        <li><a href="#" class="nav-link" data-view="entries"><i class="ph ph-receipt"></i> Entries</a></li>
-        <li><a href="#" class="nav-link" data-view="admin"><i class="ph ph-lock-key"></i> Admin</a></li>
-      </ul>
-    </nav>
-    
-    <main id="main-content">
-      <!-- Views injected here by app.js -->
-    </main>
+
+      <!-- Class Selection View (hidden initially) -->
+      <div id="class-selection" class="hidden">
+        <button id="back-to-schools" class="btn-back">← Back to Schools</button>
+        <h2 id="selected-school-name" class="page-title"></h2>
+        <p class="page-subtitle">Select a class to view available books and notebooks</p>
+        <div id="classes-grid" class="card-grid"></div>
+      </div>
+
+      <!-- Invoice Creation View (hidden initially) -->
+      <div id="invoice-view" class="hidden">
+        <button id="back-to-classes" class="btn-back">← Back to Classes</button>
+
+        <!-- Student Tabs Bar -->
+        <div id="student-tabs-bar">
+          <div id="student-tabs"></div>
+          <div class="student-tabs-actions">
+            <button id="btn-duplicate" class="btn btn-warning btn-sm">📋 Duplicate</button>
+            <button id="btn-new-student" class="btn btn-info btn-sm">➕ New Student</button>
+          </div>
+        </div>
+
+        <!-- Student Content Area (dynamic, one per student) -->
+        <div id="student-content"></div>
+
+        <!-- Bottom Action Bar -->
+        <div id="invoice-actions">
+          <div class="invoice-actions-inner">
+            <div class="invoice-summary" id="invoice-summary"></div>
+            <button id="btn-continue" class="btn btn-success btn-lg">Continue →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ENTRIES PAGE ===== -->
+    <section id="page-entries" class="page hidden">
+      <h1 class="page-title">Invoice Entries</h1>
+      <p class="page-subtitle">View and manage all generated invoices</p>
+      <div id="entries-search">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-entries" placeholder="Search by name, mobile, or invoice #...">
+        </div>
+      </div>
+      <div id="entries-filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="pending">⏳ Pending</button>
+        <button class="filter-btn" data-filter="partial">🔄 Partial</button>
+        <button class="filter-btn" data-filter="completed">✅ Completed</button>
+        <button class="filter-btn" data-filter="returned">↩️ Returned</button>
+      </div>
+      <div id="entries-list"></div>
+    </section>
+
+    <!-- ===== ADMIN PAGE ===== -->
+    <section id="page-admin" class="page hidden">
+      <!-- Login Form (shown when not authenticated) -->
+      <div id="admin-login">
+        <div class="login-card">
+          <div class="login-icon">🔐</div>
+          <h1>Admin Login</h1>
+          <p class="login-subtitle">Enter your credentials to access the dashboard</p>
+          <div class="form-group">
+            <label for="admin-username">Username</label>
+            <input type="text" id="admin-username" placeholder="Enter username" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="admin-password">Password</label>
+            <input type="password" id="admin-password" placeholder="Enter password" autocomplete="current-password">
+          </div>
+          <button id="btn-admin-login" class="btn btn-primary btn-lg btn-full">Login</button>
+          <p id="login-error" class="error-text hidden"></p>
+        </div>
+      </div>
+
+      <!-- Admin Dashboard (hidden until login) -->
+      <div id="admin-dashboard" class="hidden">
+        <div id="admin-header">
+          <div>
+            <h1 class="page-title">Admin Dashboard</h1>
+            <p class="page-subtitle">Manage your inventory and monitor activity</p>
+          </div>
+          <button id="btn-admin-logout" class="btn btn-danger">🚪 Logout</button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div id="stats-grid">
+          <div class="stat-card stat-invoices">
+            <div class="stat-icon">📄</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-total-invoices">0</div>
+              <div class="stat-label">Total Invoices</div>
+            </div>
+          </div>
+          <div class="stat-card stat-pending">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-pending">0</div>
+              <div class="stat-label">Pending Items</div>
+            </div>
+          </div>
+          <div class="stat-card stat-completed">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-completed">0</div>
+              <div class="stat-label">Completed Items</div>
+            </div>
+          </div>
+          <div class="stat-card stat-returned">
+            <div class="stat-icon">↩️</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-returned">0</div>
+              <div class="stat-label">Returned Items</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Tabs -->
+        <div id="admin-tabs">
+          <button class="admin-tab active" data-tab="schools">🏫 Schools</button>
+          <button class="admin-tab" data-tab="classes">📖 Classes</button>
+          <button class="admin-tab" data-tab="books">📕 Books</button>
+          <button class="admin-tab" data-tab="notebooks">📓 Notebooks</button>
+        </div>
+
+        <!-- Admin Content Panels -->
+        <div id="admin-content">
+          <div id="admin-schools" class="admin-panel active"></div>
+          <div id="admin-classes" class="admin-panel hidden"></div>
+          <div id="admin-books" class="admin-panel hidden"></div>
+          <div id="admin-notebooks" class="admin-panel hidden"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== MODALS ===== -->
+
+  <!-- Checkout Modal -->
+  <div id="modal-checkout" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Complete Invoice</h2>
+        <button class="modal-close" data-modal="modal-checkout">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="checkout-mobile">Customer Mobile Number</label>
+          <input type="tel" id="checkout-mobile" placeholder="Enter 10-digit mobile number" maxlength="10">
+        </div>
+        <div class="form-group">
+          <label for="checkout-name">Customer Name</label>
+          <input type="text" id="checkout-name" placeholder="Enter customer name">
+        </div>
+        <div class="form-group">
+          <label for="checkout-message">Invoice Message (Optional)</label>
+          <textarea id="checkout-message" placeholder="Add a message for this invoice..." rows="3"></textarea>
+        </div>
+        <div id="checkout-summary" class="checkout-summary"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-cancel-checkout" class="btn btn-secondary">Cancel</button>
+        <button id="btn-complete-invoice" class="btn btn-success">✅ Complete Invoice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Student Modal -->
+  <div id="modal-new-student" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add New Student</h2>
+        <button class="modal-close" data-modal="modal-new-student">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="new-student-school">Select School</label>
+          <select id="new-student-school">
+            <option value="">-- Select School --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="new-student-class">Select Class</label>
+          <select id="new-student-class" disabled>
+            <option value="">-- Select Class --</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-cancel-new-student" class="btn btn-secondary">Cancel</button>
+        <button id="btn-confirm-new-student" class="btn btn-primary">Add Student</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Add/Edit Modal -->
+  <div id="modal-admin" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="admin-modal-title"></h2>
+        <button class="modal-close" data-modal="modal-admin">&times;</button>
+      </div>
+      <div class="modal-body" id="admin-modal-body"></div>
+      <div class="modal-actions">
+        <button id="btn-cancel-admin" class="btn btn-secondary">Cancel</button>
+        <button id="btn-save-admin" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast/Notification -->
+  <div id="toast" class="toast hidden">
+    <span class="toast-icon"></span>
+    <span class="toast-message"></span>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading" class="loading-overlay hidden">
+    <div class="spinner"></div>
+    <p class="loading-text">Loading...</p>
   </div>
 
   <script src="script.js"></script>
