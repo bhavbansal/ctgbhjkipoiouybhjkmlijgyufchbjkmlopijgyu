@@ -1,720 +1,2031 @@
-// =================================================================
-// SHYAM BOOK DEPOT — POS Frontend Application
-// =================================================================
+// ============================================
+// SHYAM BOOK DEPOT — COMPLETE APPLICATION LOGIC
+// ============================================
 
-// ---- MOCK PRODUCT CATALOGS ----
-const booksCatalog = [
-  { itemId: 'BK-1001', name: 'English Textbook', mrp: 250, sellingPrice: 230 },
-  { itemId: 'BK-1002', name: 'Mathematics Vol 1', mrp: 300, sellingPrice: 275 },
-  { itemId: 'BK-1003', name: 'Science Workbook', mrp: 220, sellingPrice: 200 },
-  { itemId: 'BK-1004', name: 'Hindi Vyakaran', mrp: 180, sellingPrice: 160 },
-  { itemId: 'BK-1005', name: 'Social Studies', mrp: 260, sellingPrice: 240 },
-  { itemId: 'BK-1006', name: 'Computer Science', mrp: 320, sellingPrice: 290 },
-  { itemId: 'BK-1007', name: 'Sanskrit Reader', mrp: 190, sellingPrice: 170 },
-  { itemId: 'BK-1008', name: 'Art & Craft', mrp: 150, sellingPrice: 135 },
-  { itemId: 'BK-1009', name: 'General Knowledge', mrp: 130, sellingPrice: 115 },
-  { itemId: 'BK-1010', name: 'Moral Science', mrp: 140, sellingPrice: 125 },
-];
+// ============================================
+// CONFIGURATION
+// ============================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbxgE5KF70PfusNL5ZKtnNNVVkmoGlsFHyRKvO7XijudEo_I4zQ8zVPOSlkLFXaiEx7R/exec'; // Replace with your deployed Apps Script URL
 
-const notebooksCatalog = [
-  { itemId: 'NB-2001', name: 'Single Line (100pg)', mrp: 50, sellingPrice: 42 },
-  { itemId: 'NB-2002', name: 'Four Line (100pg)', mrp: 45, sellingPrice: 38 },
-  { itemId: 'NB-2003', name: 'Square Box (100pg)', mrp: 50, sellingPrice: 42 },
-  { itemId: 'NB-2004', name: 'Double Line (100pg)', mrp: 45, sellingPrice: 38 },
-  { itemId: 'NB-2005', name: 'Single Line (200pg)', mrp: 80, sellingPrice: 68 },
-  { itemId: 'NB-2006', name: 'Plain Drawing (100pg)', mrp: 55, sellingPrice: 48 },
-  { itemId: 'NB-2007', name: 'Practical File', mrp: 70, sellingPrice: 60 },
-  { itemId: 'NB-2008', name: 'Interleaf (200pg)', mrp: 90, sellingPrice: 78 },
-  { itemId: 'NB-2009', name: 'Graph Notebook', mrp: 60, sellingPrice: 52 },
-  { itemId: 'NB-2010', name: 'Lab Manual', mrp: 75, sellingPrice: 65 },
-];
-
-// ---- SCHOOL & CLASS MOCK DATA ----
-const schools = [
-  { id: 1, name: 'Greenwood High', icon: 'ph-buildings' },
-  { id: 2, name: "St. Xavier's", icon: 'ph-student' },
-  { id: 3, name: 'Delhi Public School', icon: 'ph-books' },
-  { id: 4, name: 'National Academy', icon: 'ph-backpack' },
-];
-
-const classes = Array.from({ length: 12 }, (_, i) => ({
-  id: i + 1,
-  name: `Class ${i + 1}`,
-}));
-
-// ---- SEEDED DUMMY ENTRIES (pre-existing) ----
-const seededEntries = [
-  { id: 'ENT-1001', school: 'Greenwood High', class: 'Class 5', mobile: '+91 9876543210', status: 'completed', date: '2023-10-25', time: '10:30' },
-  { id: 'ENT-1002', school: "St. Xavier's", class: 'Class 8', mobile: '+91 9123456780', status: 'pending', date: '2023-10-26', time: '14:15' },
-  { id: 'ENT-1003', school: 'Delhi Public School', class: 'Class 12', mobile: '+91 9988776655', status: 'partial', date: '2023-10-26', time: '16:45' },
-  { id: 'ENT-1004', school: 'National Academy', class: 'Class 1', mobile: '+91 9876500000', status: 'return', date: '2023-10-27', time: '09:00' },
-];
-
-// ---- ENTRIES STORAGE (combines seeded + localStorage) ----
-function loadEntries() {
-  const stored = localStorage.getItem('sbd_entries');
-  const userEntries = stored ? JSON.parse(stored) : [];
-  return [...seededEntries, ...userEntries];
-}
-
-function saveEntry(entry) {
-  const stored = localStorage.getItem('sbd_entries');
-  const userEntries = stored ? JSON.parse(stored) : [];
-  userEntries.push(entry);
-  localStorage.setItem('sbd_entries', JSON.stringify(userEntries));
-}
-
-function generateEntryId() {
-  const entries = loadEntries();
-  return `ENT-${1001 + entries.length}`;
-}
-
-// ---- HELPERS ----
-function createEmptyStudent(index) {
-  return {
-    label: `Student ${index}`,
-    books: [],
-    notebooks: [],
-    other: [],
-  };
-}
-
-let _uid = 0;
-function uid() { return ++_uid; }
-
-// ---- APP STATE ----
-let state = {
-  view: 'home',
-  homeStep: 'school',
+// ============================================
+// STATE
+// ============================================
+const AppState = {
+  currentPage: 'home',
+  schools: [],
+  classes: [],
   selectedSchool: null,
   selectedClass: null,
-
   // Invoice state
-  students: [createEmptyStudent(1)],
-  activeStudentIdx: 0,
-
-  // Entries tab
-  entriesTab: 'all',
+  invoice: {
+    students: [], // Each: { schoolName, className, classIndex, items: [] }
+    activeStudentIndex: 0,
+  },
+  // Entries state
+  entries: [],
+  filteredEntries: [],
+  entriesFilter: 'all',
   entriesSearch: '',
+  // Admin state
+  isAdminLoggedIn: false,
+  adminTab: 'schools',
+  adminData: {
+    schools: [],
+    classes: [],
+    books: [],
+    notebooks: [],
+  },
 };
 
-// ---- DOM ----
-const mainContent = document.getElementById('main-content');
-const navLinks = document.querySelectorAll('.nav-link');
-
-// ---- INIT ----
-function init() {
-  navLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const view = e.currentTarget.getAttribute('data-view');
-      navLinks.forEach(l => l.classList.remove('active'));
-      e.currentTarget.classList.add('active');
-      state.view = view;
-      if (view === 'home') {
-        state.homeStep = 'school';
-        resetInvoice();
+// ============================================
+// API MODULE
+// ============================================
+const API = {
+  async get(action, params = {}) {
+    try {
+      showLoading();
+      const url = new URL(API_URL);
+      url.searchParams.set('action', action);
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
       }
-      render();
-    });
-  });
-  render();
-}
+      const data = await response.json();
+      hideLoading();
+      if (data.error) {
+        showToast(data.error, 'error');
+        return null;
+      }
+      return data;
+    } catch (error) {
+      hideLoading();
+      console.error('API GET Error:', error);
+      showToast('Failed to fetch data. Please check your connection.', 'error');
+      return null;
+    }
+  },
 
-function resetInvoice() {
-  state.students = [createEmptyStudent(1)];
-  state.activeStudentIdx = 0;
-  state.selectedSchool = null;
-  state.selectedClass = null;
-}
+  async post(action, body = {}) {
+    try {
+      showLoading();
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action, ...body }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+      const data = await response.json();
+      hideLoading();
+      if (data.error) {
+        showToast(data.error, 'error');
+        return null;
+      }
+      return data;
+    } catch (error) {
+      hideLoading();
+      console.error('API POST Error:', error);
+      showToast('Request failed. Please try again.', 'error');
+      return null;
+    }
+  },
+};
 
-function render() {
-  mainContent.innerHTML = '';
-  if (state.view === 'home') renderHome();
-  else if (state.view === 'entries') renderEntries();
-  else if (state.view === 'admin') renderAdmin();
-}
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+let toastTimeout = null;
 
-// ---- TOAST ----
-function showToast(msg) {
-  const existing = document.querySelector('.toast');
-  if (existing) existing.remove();
-  const toast = document.createElement('div');
+function showToast(message, type = 'info') {
+  const toast = document.getElementById('toast');
+  const toastIcon = toast.querySelector('.toast-icon');
+  const toastMessage = toast.querySelector('.toast-message');
+
+  // Clear existing timeout
+  if (toastTimeout) {
+    clearTimeout(toastTimeout);
+  }
+
+  // Set icon based on type
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  toastIcon.textContent = icons[type] || icons.info;
+  toastMessage.textContent = message;
+
+  // Remove previous classes
   toast.className = 'toast';
-  toast.innerHTML = `<i class="ph ph-check-circle"></i> ${msg}`;
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.style.animation = 'slideOutDown 0.3s ease-in forwards';
-    setTimeout(() => toast.remove(), 350);
-  }, 2500);
+  toast.classList.add(type);
+
+  // Show
+  toast.classList.remove('hidden');
+
+  // Auto-hide after 3 seconds
+  toastTimeout = setTimeout(() => {
+    toast.classList.add('toast-hiding');
+    setTimeout(() => {
+      toast.classList.add('hidden');
+      toast.classList.remove('toast-hiding');
+    }, 300);
+  }, 3000);
 }
 
-// =================================================================
-// HOME MODULE
-// =================================================================
-function renderHome() {
-  const c = document.createElement('div');
-  c.className = 'view-section active';
+function showLoading() {
+  document.getElementById('loading').classList.remove('hidden');
+}
 
-  switch (state.homeStep) {
-    case 'school': renderSchoolSelection(c); break;
-    case 'class': renderClassSelection(c); break;
-    case 'invoice': renderInvoice(c); break;
-    case 'details': renderDetails(c); break;
+function hideLoading() {
+  document.getElementById('loading').classList.add('hidden');
+}
+
+function formatDate(dateString) {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return dateString;
   }
-  mainContent.appendChild(c);
 }
 
-// ---- School Selection ----
-function renderSchoolSelection(c) {
-  c.innerHTML = `
-    <div class="page-header">
-      <h1 class="page-title">Select School</h1>
-      <p class="page-subtitle">Choose a school to begin the transaction</p>
-    </div>
-    <div class="grid-cards" id="school-grid"></div>
-  `;
-  setTimeout(() => {
-    const grid = document.getElementById('school-grid');
-    schools.forEach(school => {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <div class="card-icon"><i class="ph ${school.icon}"></i></div>
-        <div class="card-title">${school.name}</div>
+function formatCurrency(amount) {
+  const num = parseFloat(amount) || 0;
+  return '₹' + num.toFixed(2);
+}
+
+function generateInvoiceNumber() {
+  const now = new Date();
+  const parts = [
+    'INV',
+    now.getFullYear().toString().slice(-2),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+    String(now.getHours()).padStart(2, '0'),
+    String(now.getMinutes()).padStart(2, '0'),
+    String(now.getSeconds()).padStart(2, '0'),
+  ];
+  return parts.join('');
+}
+
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ============================================
+// ROUTER
+// ============================================
+const Router = {
+  navigate(page) {
+    // Hide all pages
+    document.querySelectorAll('.page').forEach((p) => {
+      p.classList.add('hidden');
+      p.classList.remove('active');
+    });
+
+    // Show target page
+    const targetPage = document.getElementById(`page-${page}`);
+    if (targetPage) {
+      targetPage.classList.remove('hidden');
+      targetPage.classList.add('active');
+    }
+
+    // Update nav links
+    document.querySelectorAll('.nav-link').forEach((link) => {
+      link.classList.remove('active');
+    });
+    const activeLink = document.querySelector(`.nav-link[data-page="${page}"]`);
+    if (activeLink) {
+      activeLink.classList.add('active');
+    }
+
+    AppState.currentPage = page;
+
+    // Load page data
+    switch (page) {
+      case 'home':
+        Home.loadSchools();
+        break;
+      case 'entries':
+        Entries.load();
+        break;
+      case 'admin':
+        if (AppState.isAdminLoggedIn) {
+          Admin.loadDashboard();
+        }
+        break;
+    }
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+};
+
+// ============================================
+// HOME PAGE MODULE
+// ============================================
+const Home = {
+  async loadSchools() {
+    const res = await API.get('getSchools');
+    if (res && res.success && res.data) {
+      AppState.schools = res.data.filter((s) => Number(s.status) !== 0).map(s => ({
+        index: s.schoolIndex,
+        name: s.schoolName,
+        status: s.status
+      }));
+      this.renderSchools();
+    } else {
+      AppState.schools = [];
+      this.renderSchools();
+    }
+  },
+
+  renderSchools() {
+    const grid = document.getElementById('schools-grid');
+    if (AppState.schools.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column: 1 / -1;">
+          <div class="empty-state-icon">🏫</div>
+          <div class="empty-state-title">No Schools Found</div>
+          <div class="empty-state-desc">Schools will appear here once they are added by the admin.</div>
+        </div>
       `;
-      card.addEventListener('click', () => {
-        state.selectedSchool = school;
-        state.homeStep = 'class';
-        render();
+      return;
+    }
+
+    grid.innerHTML = AppState.schools
+      .map(
+        (school, index) => `
+        <div class="card" onclick="Home.selectSchool(${school.index}, '${escapeHtml(school.name)}')" data-school-index="${school.index}">
+          <span class="card-icon">🏫</span>
+          <div class="card-title">${escapeHtml(school.name)}</div>
+          <div class="card-subtitle">Tap to view classes</div>
+        </div>
+      `
+      )
+      .join('');
+  },
+
+  async selectSchool(schoolIndex, schoolName) {
+    AppState.selectedSchool = { index: schoolIndex, name: schoolName };
+
+    const res = await API.get('getClasses', { schoolIndex: schoolIndex });
+    if (res && res.success && res.data) {
+      AppState.classes = res.data.filter((c) => Number(c.status) !== 0).map(c => ({
+        index: c.classIndex,
+        name: c.className,
+        schoolIndex: c.schoolIndex,
+        status: c.status
+      }));
+    } else {
+      AppState.classes = [];
+    }
+
+    document.getElementById('selected-school-name').textContent = schoolName;
+    document.getElementById('school-selection').classList.add('hidden');
+    document.getElementById('class-selection').classList.remove('hidden');
+    this.renderClasses();
+  },
+
+  renderClasses() {
+    const grid = document.getElementById('classes-grid');
+    if (AppState.classes.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column: 1 / -1;">
+          <div class="empty-state-icon">📖</div>
+          <div class="empty-state-title">No Classes Found</div>
+          <div class="empty-state-desc">No classes are available for this school.</div>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = AppState.classes
+      .map(
+        (cls) => `
+        <div class="card" onclick="Home.selectClass(${cls.index}, '${escapeHtml(cls.name)}')" data-class-index="${cls.index}">
+          <span class="card-icon">📖</span>
+          <div class="card-title">${escapeHtml(cls.name)}</div>
+          <div class="card-subtitle">${escapeHtml(AppState.selectedSchool.name)}</div>
+        </div>
+      `
+      )
+      .join('');
+  },
+
+  async selectClass(classIndex, className) {
+    AppState.selectedClass = { index: classIndex, name: className };
+
+    document.getElementById('class-selection').classList.add('hidden');
+    document.getElementById('invoice-view').classList.remove('hidden');
+
+    // Initialize invoice with first student
+    await Invoice.init(
+      AppState.selectedSchool.name,
+      className,
+      classIndex
+    );
+  },
+
+  backToSchools() {
+    document.getElementById('class-selection').classList.add('hidden');
+    document.getElementById('school-selection').classList.remove('hidden');
+    AppState.selectedSchool = null;
+    AppState.classes = [];
+  },
+
+  backToClasses() {
+    document.getElementById('invoice-view').classList.add('hidden');
+    document.getElementById('class-selection').classList.remove('hidden');
+    Invoice.reset();
+    AppState.selectedClass = null;
+  },
+};
+
+// ============================================
+// INVOICE MODULE
+// ============================================
+const Invoice = {
+  async init(schoolName, className, classIndex) {
+    // Reset invoice state
+    AppState.invoice = {
+      students: [],
+      activeStudentIndex: 0,
+    };
+
+    // Load items for the first student
+    const items = await this.loadItems(classIndex);
+    if (items) {
+      AppState.invoice.students.push({
+        schoolName,
+        className,
+        classIndex,
+        items: items,
       });
-      grid.appendChild(card);
-    });
-  }, 0);
-}
+    }
 
-// ---- Class Selection ----
-function renderClassSelection(c) {
-  c.innerHTML = `
-    <div class="page-header">
-      <button class="btn btn-secondary" id="btn-back-school" style="margin-bottom:1rem;">
-        <i class="ph ph-arrow-left"></i> Back to Schools
-      </button>
-      <h1 class="page-title">Select Class</h1>
-      <p class="page-subtitle">For ${state.selectedSchool.name}</p>
-    </div>
-    <div class="grid-cards" id="class-grid"></div>
-  `;
-  setTimeout(() => {
-    document.getElementById('btn-back-school').addEventListener('click', () => {
-      state.homeStep = 'school';
-      render();
-    });
-    const grid = document.getElementById('class-grid');
-    classes.forEach(cls => {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.style.alignItems = 'center';
-      card.style.textAlign = 'center';
-      card.innerHTML = `<div class="card-title" style="font-size:1.5rem;margin-top:1rem;">${cls.name}</div>`;
-      card.addEventListener('click', () => {
-        state.selectedClass = cls;
-        state.homeStep = 'invoice';
-        render();
+    this.renderStudentTabs();
+    this.renderStudentContent(0);
+    this.updateInvoiceSummary();
+  },
+
+  async loadItems(classIndex) {
+    // Fetch books and notebooks separately (matching code.gs API)
+    const [booksRes, notebooksRes] = await Promise.all([
+      API.get('getBooks', { classIndex: classIndex }),
+      API.get('getNotebooks', { classIndex: classIndex }),
+    ]);
+    const items = [];
+
+    // Process books
+    if (booksRes && booksRes.success && Array.isArray(booksRes.data)) {
+      booksRes.data.forEach((book) => {
+        if (Number(book.status) !== 0) {
+          items.push({
+            type: 'book',
+            identity: book.bookIdentity || '',
+            name: book.bookName || '',
+            mrp: parseFloat(book.mrp) || 0,
+            sellingPrice: parseFloat(book.sellingPrice) || 0,
+            quantity: 0,
+            message: '',
+            status: 1,
+            originalIndex: book.bookIndex,
+          });
+        }
       });
-      grid.appendChild(card);
-    });
-  }, 0);
-}
+    }
 
-// =================================================================
-// INVOICE VIEW — The core feature
-// =================================================================
-function renderInvoice(c) {
-  const student = state.students[state.activeStudentIdx];
+    // Process notebooks
+    if (notebooksRes && notebooksRes.success && Array.isArray(notebooksRes.data)) {
+      notebooksRes.data.forEach((nb) => {
+        if (Number(nb.status) !== 0) {
+          items.push({
+            type: 'notebook',
+            identity: nb.notebookIdentity || '',
+            name: nb.notebookName || '',
+            mrp: parseFloat(nb.mrp) || 0,
+            sellingPrice: parseFloat(nb.sellingPrice) || 0,
+            quantity: 0,
+            message: '',
+            status: 1,
+            originalIndex: nb.notebookIndex,
+          });
+        }
+      });
+    }
 
-  // Student tabs
-  let studentTabsHtml = state.students.map((s, i) => `
-    <button class="student-tab ${i === state.activeStudentIdx ? 'active' : ''}" data-stidx="${i}">
-      <span class="student-tab-label"><i class="ph ph-user"></i> ${s.label}</span>
-    </button>
-  `).join('');
+    return items;
+  },
 
-  c.innerHTML = `
-    <div class="page-header">
-      <button class="btn btn-secondary" id="btn-back-class" style="margin-bottom:1rem;">
-        <i class="ph ph-arrow-left"></i> Back to Classes
+  renderStudentTabs() {
+    const tabsContainer = document.getElementById('student-tabs');
+    const students = AppState.invoice.students;
+
+    tabsContainer.innerHTML = students
+      .map(
+        (student, index) => `
+        <div class="student-tab ${index === AppState.invoice.activeStudentIndex ? 'active' : ''}"
+             onclick="Invoice.switchStudent(${index})">
+          <span>Student ${index + 1}</span>
+          <span class="student-tab-school">${escapeHtml(student.className)}</span>
+          ${
+            students.length > 1
+              ? `<button class="remove-student" onclick="event.stopPropagation(); Invoice.removeStudent(${index})">×</button>`
+              : ''
+          }
+        </div>
+      `
+      )
+      .join('');
+  },
+
+  switchStudent(index) {
+    AppState.invoice.activeStudentIndex = index;
+    this.renderStudentTabs();
+    this.renderStudentContent(index);
+  },
+
+  renderStudentContent(studentIndex) {
+    const container = document.getElementById('student-content');
+    const student = AppState.invoice.students[studentIndex];
+
+    if (!student) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📝</div>
+          <div class="empty-state-title">No Student Data</div>
+          <div class="empty-state-desc">Add a student to start creating an invoice.</div>
+        </div>
+      `;
+      return;
+    }
+
+    const books = student.items.filter((item) => item.type === 'book');
+    const notebooks = student.items.filter((item) => item.type === 'notebook');
+    const others = student.items.filter((item) => item.type === 'other');
+
+    let html = `<div class="student-panel" data-student="${studentIndex}">`;
+
+    // Student info header
+    html += `
+      <div style="margin-bottom: 8px; padding: 10px 14px; background: var(--glass); border: 1px solid var(--border); border-radius: var(--radius-btn);">
+        <span style="font-size: 0.85rem; color: var(--text-secondary);">${escapeHtml(student.schoolName)} → ${escapeHtml(student.className)}</span>
+      </div>
+    `;
+
+    // Books Section
+    html += `
+      <div class="section-header">
+        <h3>📕 Books <span class="section-count">${books.length}</span></h3>
+      </div>
+    `;
+    if (books.length > 0) {
+      html += books
+        .map((item, i) => {
+          const itemIndex = student.items.indexOf(item);
+          return this.renderItemCard(item, studentIndex, itemIndex);
+        })
+        .join('');
+    } else {
+      html += `<div class="empty-state" style="padding: 24px;"><div class="empty-state-desc">No books available for this class.</div></div>`;
+    }
+
+    // Notebooks Section
+    html += `
+      <div class="section-header">
+        <h3>📓 Notebooks <span class="section-count">${notebooks.length}</span></h3>
+      </div>
+    `;
+    if (notebooks.length > 0) {
+      html += notebooks
+        .map((item) => {
+          const itemIndex = student.items.indexOf(item);
+          return this.renderItemCard(item, studentIndex, itemIndex);
+        })
+        .join('');
+    } else {
+      html += `<div class="empty-state" style="padding: 24px;"><div class="empty-state-desc">No notebooks available for this class.</div></div>`;
+    }
+
+    // Others Section
+    html += `
+      <div class="section-header">
+        <h3>📦 Others <span class="section-count">${others.length}</span></h3>
+      </div>
+    `;
+    if (others.length > 0) {
+      html += others
+        .map((item) => {
+          const itemIndex = student.items.indexOf(item);
+          return this.renderOtherItemCard(item, studentIndex, itemIndex);
+        })
+        .join('');
+    }
+    html += `
+      <button class="add-other-item" onclick="Invoice.addOtherItem(${studentIndex})">
+        ➕ Add Custom Item
       </button>
-      <h1 class="page-title">Invoice — ${state.selectedSchool.name}</h1>
-      <p class="page-subtitle">${state.selectedClass.name} &bull; ${state.students.length} student(s)</p>
-    </div>
+    `;
 
-    <div class="student-tabs" id="student-tabs">
-      ${studentTabsHtml}
-    </div>
+    html += `</div>`;
+    container.innerHTML = html;
+  },
 
-    <div class="invoice-columns" id="invoice-columns">
-      <div class="invoice-section" id="section-books">
-        <div class="invoice-section-header">
-          <div class="invoice-section-title"><i class="ph ph-book-open-text"></i> Books</div>
-          <button class="btn-icon" id="add-book" title="Add Book"><i class="ph ph-plus"></i></button>
+  renderItemCard(item, studentIndex, itemIndex) {
+    const identityClass =
+      item.type === 'notebook' ? 'notebook' : item.type === 'other' ? 'other' : '';
+    return `
+      <div class="item-card">
+        <div class="item-identity ${identityClass}">${escapeHtml(item.identity || item.type.charAt(0).toUpperCase())}</div>
+        <div class="item-info">
+          <div class="item-name">${escapeHtml(item.name)}</div>
+          <div class="item-prices">
+            <span class="item-mrp">MRP: <span>${formatCurrency(item.mrp)}</span></span>
+            <span class="item-selling-price">
+              Sell: <input type="number" value="${item.sellingPrice}" 
+                     step="0.01" min="0"
+                     onchange="Invoice.updatePrice(${studentIndex}, ${itemIndex}, this.value)">
+            </span>
+          </div>
+          <div class="item-message">
+            <input type="text" placeholder="Add message..."
+                   value="${escapeHtml(item.message)}"
+                   onchange="Invoice.updateMessage(${studentIndex}, ${itemIndex}, this.value)">
+          </div>
         </div>
-        <div class="product-list" id="list-books"></div>
-      </div>
-      <div class="invoice-section" id="section-notebooks">
-        <div class="invoice-section-header">
-          <div class="invoice-section-title"><i class="ph ph-notebook"></i> Notebooks</div>
-          <button class="btn-icon" id="add-notebook" title="Add Notebook"><i class="ph ph-plus"></i></button>
+        <div class="item-controls">
+          <div class="quantity-control">
+            <button class="quantity-btn minus" onclick="Invoice.updateQuantity(${studentIndex}, ${itemIndex}, -1)">−</button>
+            <span class="quantity-value">${item.quantity}</span>
+            <button class="quantity-btn plus" onclick="Invoice.updateQuantity(${studentIndex}, ${itemIndex}, 1)">+</button>
+          </div>
         </div>
-        <div class="product-list" id="list-notebooks"></div>
       </div>
-      <div class="invoice-section" id="section-other">
-        <div class="invoice-section-header">
-          <div class="invoice-section-title"><i class="ph ph-package"></i> Other</div>
-          <button class="btn-icon" id="add-other" title="Add Item"><i class="ph ph-plus"></i></button>
+    `;
+  },
+
+  renderOtherItemCard(item, studentIndex, itemIndex) {
+    return `
+      <div class="other-item-card">
+        <div class="item-identity other">🔧</div>
+        <input type="text" placeholder="Item name" value="${escapeHtml(item.name)}"
+               onchange="Invoice.updateOtherName(${studentIndex}, ${itemIndex}, this.value)">
+        <input type="number" placeholder="Price" value="${item.sellingPrice}" step="0.01" min="0"
+               onchange="Invoice.updatePrice(${studentIndex}, ${itemIndex}, this.value)">
+        <div class="quantity-control">
+          <button class="quantity-btn minus" onclick="Invoice.updateQuantity(${studentIndex}, ${itemIndex}, -1)">−</button>
+          <span class="quantity-value">${item.quantity}</span>
+          <button class="quantity-btn plus" onclick="Invoice.updateQuantity(${studentIndex}, ${itemIndex}, 1)">+</button>
         </div>
-        <div class="product-list" id="list-other"></div>
+        <button class="remove-other-btn" onclick="Invoice.removeOtherItem(${studentIndex}, ${itemIndex})">×</button>
       </div>
-    </div>
+    `;
+  },
 
-    <div class="action-bar">
-      <button class="btn btn-primary" id="btn-continue"><i class="ph ph-arrow-right"></i> Continue</button>
-      <button class="btn btn-warning" id="btn-duplicate"><i class="ph ph-copy"></i> Duplicate</button>
-      <button class="btn btn-success" id="btn-new-student"><i class="ph ph-user-plus"></i> New Student</button>
-    </div>
-  `;
+  addOtherItem(studentIndex) {
+    const student = AppState.invoice.students[studentIndex];
+    if (!student) return;
 
-  setTimeout(() => bindInvoiceEvents(student), 0);
-}
-
-function bindInvoiceEvents(student) {
-  // Back button
-  document.getElementById('btn-back-class').addEventListener('click', () => {
-    state.homeStep = 'class';
-    render();
-  });
-
-  // Student tab switching
-  document.querySelectorAll('.student-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      state.activeStudentIdx = parseInt(tab.dataset.stidx);
-      render();
+    student.items.push({
+      type: 'other',
+      identity: 'OTH',
+      name: '',
+      mrp: 0,
+      sellingPrice: 0,
+      quantity: 1,
+      message: '',
+      status: 1,
     });
-  });
 
-  // Render existing items
-  renderItemList('books', student.books);
-  renderItemList('notebooks', student.notebooks);
-  renderItemList('other', student.other);
+    this.renderStudentContent(studentIndex);
+    this.updateInvoiceSummary();
+  },
 
-  // Add buttons
-  document.getElementById('add-book').addEventListener('click', () => {
-    student.books.push({ _uid: uid(), catalogIdx: '', name: '', itemId: '', mrp: '', sellingPrice: '', notes: '' });
-    renderItemList('books', student.books);
-  });
+  removeOtherItem(studentIndex, itemIndex) {
+    const student = AppState.invoice.students[studentIndex];
+    if (!student) return;
 
-  document.getElementById('add-notebook').addEventListener('click', () => {
-    student.notebooks.push({ _uid: uid(), catalogIdx: '', name: '', itemId: '', mrp: '', sellingPrice: '', notes: '' });
-    renderItemList('notebooks', student.notebooks);
-  });
+    student.items.splice(itemIndex, 1);
+    this.renderStudentContent(studentIndex);
+    this.updateInvoiceSummary();
+  },
 
-  document.getElementById('add-other').addEventListener('click', () => {
-    student.other.push({ _uid: uid(), name: '', itemId: '', mrp: '', sellingPrice: '', notes: '' });
-    renderItemList('other', student.other);
-  });
+  updateOtherName(studentIndex, itemIndex, newName) {
+    const student = AppState.invoice.students[studentIndex];
+    if (!student || !student.items[itemIndex]) return;
+    student.items[itemIndex].name = newName;
+  },
 
-  // Action buttons
-  document.getElementById('btn-continue').addEventListener('click', () => {
-    state.homeStep = 'details';
-    render();
-  });
+  updateQuantity(studentIndex, itemIndex, delta) {
+    const student = AppState.invoice.students[studentIndex];
+    if (!student || !student.items[itemIndex]) return;
 
-  document.getElementById('btn-duplicate').addEventListener('click', handleDuplicate);
-  document.getElementById('btn-new-student').addEventListener('click', handleNewStudent);
-}
+    const item = student.items[itemIndex];
+    const newQty = item.quantity + delta;
+    if (newQty < 0) return;
+    item.quantity = newQty;
 
-// ---- Render Item List ----
-function renderItemList(type, items) {
-  const list = document.getElementById(`list-${type}`);
-  if (!list) return;
+    // Update DOM directly for performance
+    const panel = document.querySelector(
+      `.student-panel[data-student="${studentIndex}"]`
+    );
+    if (panel) {
+      const cards = panel.querySelectorAll('.item-card, .other-item-card');
+      // Find the card by matching item index
+      let cardIndex = 0;
+      const allItems = student.items;
+      for (let i = 0; i < allItems.length; i++) {
+        if (i === itemIndex) break;
+        cardIndex++;
+      }
+      const targetCard = cards[cardIndex];
+      if (targetCard) {
+        const qtyDisplay = targetCard.querySelector('.quantity-value');
+        if (qtyDisplay) {
+          qtyDisplay.textContent = newQty;
+        }
+      }
+    }
 
-  if (items.length === 0) {
-    list.innerHTML = `<div class="product-list-empty"><i class="ph ph-plus-circle"></i>Click + to add items</div>`;
-    return;
-  }
+    this.updateInvoiceSummary();
+  },
 
-  list.innerHTML = '';
-  items.forEach((item, idx) => {
-    const row = document.createElement('div');
-    row.className = 'item-row';
+  updatePrice(studentIndex, itemIndex, newPrice) {
+    const student = AppState.invoice.students[studentIndex];
+    if (!student || !student.items[itemIndex]) return;
+    student.items[itemIndex].sellingPrice = parseFloat(newPrice) || 0;
+    this.updateInvoiceSummary();
+  },
 
-    if (type === 'books' || type === 'notebooks') {
-      const catalog = type === 'books' ? booksCatalog : notebooksCatalog;
-      const options = catalog.map((c, ci) =>
-        `<option value="${ci}" ${item.catalogIdx === ci.toString() ? 'selected' : ''}>${c.name}</option>`
-      ).join('');
+  updateMessage(studentIndex, itemIndex, message) {
+    const student = AppState.invoice.students[studentIndex];
+    if (!student || !student.items[itemIndex]) return;
+    student.items[itemIndex].message = message;
+  },
 
-      row.innerHTML = `
-        <div class="item-row-header">
-          <span class="item-row-num">Item #${idx + 1}</span>
-          <button class="delete-item-btn" data-type="${type}" data-idx="${idx}" title="Remove"><i class="ph ph-trash"></i></button>
+  updateInvoiceSummary() {
+    const summaryEl = document.getElementById('invoice-summary');
+    if (!summaryEl) return;
+
+    let totalItems = 0;
+    let totalAmount = 0;
+
+    AppState.invoice.students.forEach((student) => {
+      student.items.forEach((item) => {
+        if (item.quantity > 0) {
+          totalItems += item.quantity;
+          totalAmount += item.quantity * item.sellingPrice;
+        }
+      });
+    });
+
+    summaryEl.innerHTML = `
+      <span>${totalItems} item${totalItems !== 1 ? 's' : ''} | Total: <strong>${formatCurrency(totalAmount)}</strong></span>
+    `;
+  },
+
+  duplicateStudent() {
+    const activeIndex = AppState.invoice.activeStudentIndex;
+    const activeStudent = AppState.invoice.students[activeIndex];
+    if (!activeStudent) {
+      showToast('No student to duplicate', 'error');
+      return;
+    }
+
+    const cloned = deepClone(activeStudent);
+    AppState.invoice.students.push(cloned);
+    const newIndex = AppState.invoice.students.length - 1;
+    AppState.invoice.activeStudentIndex = newIndex;
+
+    this.renderStudentTabs();
+    this.renderStudentContent(newIndex);
+    this.updateInvoiceSummary();
+    showToast('Student duplicated successfully', 'success');
+  },
+
+  addNewStudent() {
+    // Populate schools dropdown in the modal
+    const schoolSelect = document.getElementById('new-student-school');
+    schoolSelect.innerHTML = '<option value="">-- Select School --</option>';
+    AppState.schools.forEach((school) => {
+      schoolSelect.innerHTML += `<option value="${school.index}" data-name="${escapeHtml(school.name)}">${escapeHtml(school.name)}</option>`;
+    });
+
+    // Reset class dropdown
+    const classSelect = document.getElementById('new-student-class');
+    classSelect.innerHTML = '<option value="">-- Select Class --</option>';
+    classSelect.disabled = true;
+
+    Modal.show('modal-new-student');
+  },
+
+  async onNewStudentSchoolChange(schoolIndex) {
+    const classSelect = document.getElementById('new-student-class');
+    classSelect.innerHTML = '<option value="">-- Loading... --</option>';
+    classSelect.disabled = true;
+
+    if (!schoolIndex) {
+      classSelect.innerHTML = '<option value="">-- Select Class --</option>';
+      return;
+    }
+
+    const res = await API.get('getClasses', { schoolIndex: schoolIndex });
+    classSelect.innerHTML = '<option value="">-- Select Class --</option>';
+
+    if (res && res.success && res.data) {
+      const activeClasses = res.data.filter((c) => Number(c.status) !== 0);
+      activeClasses.forEach((cls) => {
+        classSelect.innerHTML += `<option value="${cls.classIndex}" data-name="${escapeHtml(cls.className)}">${escapeHtml(cls.className)}</option>`;
+      });
+      classSelect.disabled = false;
+    }
+  },
+
+  async confirmNewStudent() {
+    const schoolSelect = document.getElementById('new-student-school');
+    const classSelect = document.getElementById('new-student-class');
+
+    const schoolIndex = schoolSelect.value;
+    const classIndex = classSelect.value;
+
+    if (!schoolIndex || !classIndex) {
+      showToast('Please select both school and class', 'error');
+      return;
+    }
+
+    const schoolName =
+      schoolSelect.options[schoolSelect.selectedIndex].dataset.name || '';
+    const className =
+      classSelect.options[classSelect.selectedIndex].dataset.name || '';
+
+    // Load items for the new student
+    const items = await this.loadItems(parseInt(classIndex));
+    if (items) {
+      AppState.invoice.students.push({
+        schoolName,
+        className,
+        classIndex: parseInt(classIndex),
+        items: items,
+      });
+
+      const newIndex = AppState.invoice.students.length - 1;
+      AppState.invoice.activeStudentIndex = newIndex;
+
+      this.renderStudentTabs();
+      this.renderStudentContent(newIndex);
+      this.updateInvoiceSummary();
+      Modal.hide('modal-new-student');
+      showToast('New student added', 'success');
+    }
+  },
+
+  removeStudent(index) {
+    if (AppState.invoice.students.length <= 1) {
+      showToast('Cannot remove the only student', 'error');
+      return;
+    }
+
+    AppState.invoice.students.splice(index, 1);
+
+    // Adjust active index
+    if (AppState.invoice.activeStudentIndex >= AppState.invoice.students.length) {
+      AppState.invoice.activeStudentIndex = AppState.invoice.students.length - 1;
+    }
+
+    this.renderStudentTabs();
+    this.renderStudentContent(AppState.invoice.activeStudentIndex);
+    this.updateInvoiceSummary();
+    showToast('Student removed', 'info');
+  },
+
+  showCheckoutModal() {
+    // Validate — at least one item with quantity > 0
+    let hasItems = false;
+    AppState.invoice.students.forEach((student) => {
+      student.items.forEach((item) => {
+        if (item.quantity > 0) hasItems = true;
+      });
+    });
+
+    if (!hasItems) {
+      showToast('Please add at least one item with quantity > 0', 'error');
+      return;
+    }
+
+    // Build checkout summary
+    const summaryEl = document.getElementById('checkout-summary');
+    let html = '';
+    let grandTotal = 0;
+
+    AppState.invoice.students.forEach((student, sIndex) => {
+      let studentTotal = 0;
+      const selectedItems = student.items.filter((item) => item.quantity > 0);
+
+      if (selectedItems.length === 0) return;
+
+      html += `<div style="margin-bottom: 8px; font-weight: 600; color: var(--accent-primary-light); font-size: 0.85rem;">Student ${sIndex + 1} — ${escapeHtml(student.className)}</div>`;
+
+      selectedItems.forEach((item) => {
+        const lineTotal = item.quantity * item.sellingPrice;
+        studentTotal += lineTotal;
+        html += `
+          <div class="checkout-summary-row">
+            <span>${escapeHtml(item.name)} × ${item.quantity}</span>
+            <span>${formatCurrency(lineTotal)}</span>
+          </div>
+        `;
+      });
+
+      grandTotal += studentTotal;
+    });
+
+    html += `
+      <div class="checkout-summary-row total">
+        <span>Grand Total</span>
+        <span>${formatCurrency(grandTotal)}</span>
+      </div>
+    `;
+
+    summaryEl.innerHTML = html;
+
+    // Clear inputs
+    document.getElementById('checkout-mobile').value = '';
+    document.getElementById('checkout-name').value = '';
+    document.getElementById('checkout-message').value = '';
+
+    Modal.show('modal-checkout');
+  },
+
+  async completeInvoice() {
+    const mobile = document.getElementById('checkout-mobile').value.trim();
+    const name = document.getElementById('checkout-name').value.trim();
+    const message = document.getElementById('checkout-message').value.trim();
+
+    if (!mobile) {
+      showToast('Please enter a mobile number', 'error');
+      return;
+    }
+
+    if (!name) {
+      showToast('Please enter customer name', 'error');
+      return;
+    }
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-IN');
+    const timeStr = now.toLocaleTimeString('en-IN');
+
+    // Build students data — only include items with quantity > 0
+    const studentsData = AppState.invoice.students.map((student) => ({
+      schoolName: student.schoolName,
+      className: student.className,
+      items: student.items
+        .filter((item) => item.quantity > 0)
+        .map((item) => ({
+          type: item.type,
+          identity: item.identity,
+          name: item.name,
+          mrp: item.mrp,
+          sellingPrice: item.sellingPrice,
+          quantity: item.quantity,
+          message: item.message,
+          status: item.status,
+        })),
+    }));
+
+    // Match code.gs createInvoice expected fields
+    const result = await API.post('createInvoice', {
+      mobileNumber: mobile,
+      customerName: name,
+      date: dateStr,
+      time: timeStr,
+      invoiceMessage: message,
+      students: studentsData,
+    });
+
+    if (result && result.success) {
+      const invNum = result.data ? result.data.invoiceNumber : '';
+      showToast(`Invoice ${invNum} created successfully!`, 'success');
+      Modal.hide('modal-checkout');
+      this.reset();
+
+      // Go back to school selection
+      document.getElementById('invoice-view').classList.add('hidden');
+      document.getElementById('school-selection').classList.remove('hidden');
+    }
+  },
+
+  reset() {
+    AppState.invoice = {
+      students: [],
+      activeStudentIndex: 0,
+    };
+    document.getElementById('student-tabs').innerHTML = '';
+    document.getElementById('student-content').innerHTML = '';
+    const summaryEl = document.getElementById('invoice-summary');
+    if (summaryEl) summaryEl.innerHTML = '';
+  },
+};
+
+// ============================================
+// ENTRIES MODULE
+// ============================================
+const Entries = {
+  async load() {
+    const res = await API.get('getEntries');
+    if (res && res.success && res.data) {
+      AppState.entries = res.data.map(e => ({
+        invoiceNumber: e.invoiceNumber,
+        customerName: e.customerName,
+        customerMobile: e.mobileNumber,
+        date: e.date,
+        time: e.time,
+        invoiceMessage: e.invoiceMessage,
+        students: e.students || [],
+      }));
+    } else {
+      AppState.entries = [];
+    }
+    AppState.filteredEntries = [...AppState.entries];
+    this.applyFiltersAndSearch();
+  },
+
+  applyFiltersAndSearch() {
+    let entries = [...AppState.entries];
+
+    // Apply status filter
+    if (AppState.entriesFilter !== 'all') {
+      entries = entries.filter((entry) => {
+        const status = this.getInvoiceStatus(entry.students);
+        return status === AppState.entriesFilter;
+      });
+    }
+
+    // Apply search
+    const query = AppState.entriesSearch.toLowerCase();
+    if (query) {
+      entries = entries.filter((entry) => {
+        return (
+          (entry.customerName || '').toLowerCase().includes(query) ||
+          (entry.customerMobile || '').toLowerCase().includes(query) ||
+          (entry.invoiceNumber || '').toLowerCase().includes(query)
+        );
+      });
+    }
+
+    AppState.filteredEntries = entries;
+    this.render();
+  },
+
+  render() {
+    const listEl = document.getElementById('entries-list');
+
+    if (AppState.filteredEntries.length === 0) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <div class="empty-state-title">No Entries Found</div>
+          <div class="empty-state-desc">Invoices will appear here once they are created.</div>
         </div>
-        <select class="item-select" data-type="${type}" data-idx="${idx}">
-          <option value="">— Select ${type === 'books' ? 'Book' : 'Notebook'} —</option>
-          ${options}
-        </select>
-        <div class="item-row-fields">
-          <div><span class="item-field-label">Item ID</span><input value="${item.itemId}" readonly></div>
-          <div><span class="item-field-label">MRP</span><input value="${item.mrp ? '₹' + item.mrp : ''}" readonly></div>
-          <div><span class="item-field-label">Selling Price</span><input value="${item.sellingPrice ? '₹' + item.sellingPrice : ''}" readonly></div>
-          <div class="notes-field"><span class="item-field-label">Notes</span><input class="item-notes" data-type="${type}" data-idx="${idx}" value="${item.notes || ''}" placeholder="Add notes…"></div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = AppState.filteredEntries
+      .map((entry) => {
+        const status = this.getInvoiceStatus(entry.students);
+        const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+        return `
+          <div class="entry-card" id="entry-${escapeHtml(entry.invoiceNumber)}">
+            <div class="entry-header" onclick="Entries.toggleEntryDetails('${escapeHtml(entry.invoiceNumber)}')">
+              <div class="entry-main-info">
+                <span class="entry-invoice-num">#${escapeHtml(entry.invoiceNumber)}</span>
+                <div class="entry-customer">
+                  <div class="entry-customer-name">${escapeHtml(entry.customerName)}</div>
+                  <div class="entry-customer-mobile">${escapeHtml(entry.customerMobile)}</div>
+                </div>
+              </div>
+              <div class="entry-meta">
+                <span class="status-badge ${status}">${statusLabel}</span>
+                <span class="entry-date">${escapeHtml(entry.date || '')} ${escapeHtml(entry.time || '')}</span>
+                <span class="entry-toggle">▼</span>
+              </div>
+            </div>
+            <div class="entry-details">
+              ${this.renderEntryDetails(entry)}
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+  },
+
+  getInvoiceStatus(students) {
+    if (!students || students.length === 0) return 'pending';
+
+    const allStatuses = [];
+    students.forEach((student) => {
+      if (student.items) {
+        student.items.forEach((item) => {
+          allStatuses.push(item.status);
+        });
+      }
+    });
+
+    if (allStatuses.length === 0) return 'pending';
+
+    const allPending = allStatuses.every((s) => s === 1);
+    const allCompleted = allStatuses.every((s) => s === 0);
+    const allReturned = allStatuses.every((s) => s === 2);
+
+    if (allPending) return 'pending';
+    if (allCompleted) return 'completed';
+    if (allReturned) return 'returned';
+    return 'partial';
+  },
+
+  filterEntries(filter) {
+    AppState.entriesFilter = filter;
+
+    // Update filter buttons
+    document.querySelectorAll('.filter-btn').forEach((btn) => {
+      btn.classList.remove('active');
+      if (btn.dataset.filter === filter) {
+        btn.classList.add('active');
+      }
+    });
+
+    this.applyFiltersAndSearch();
+  },
+
+  searchEntries(query) {
+    AppState.entriesSearch = query;
+    this.applyFiltersAndSearch();
+  },
+
+  toggleEntryDetails(invoiceNumber) {
+    const card = document.getElementById(`entry-${invoiceNumber}`);
+    if (card) {
+      card.classList.toggle('expanded');
+    }
+  },
+
+  renderEntryDetails(entry) {
+    if (!entry.students || entry.students.length === 0) {
+      return '<p class="text-muted" style="padding: 12px; font-size: 0.85rem;">No details available.</p>';
+    }
+
+    let html = '';
+    if (entry.invoiceMessage) {
+      html += `<div style="margin-bottom: 12px; padding: 8px 12px; background: var(--glass); border-radius: var(--radius-btn); font-size: 0.85rem; color: var(--text-secondary);"><strong>Message:</strong> ${escapeHtml(entry.invoiceMessage)}</div>`;
+    }
+
+    entry.students.forEach((student, sIndex) => {
+      html += `
+        <div class="entry-student-section">
+          <div class="entry-student-header">
+            Student ${sIndex + 1}: ${escapeHtml(student.schoolName)} — ${escapeHtml(student.className)}
+          </div>
+      `;
+
+      if (student.items && student.items.length > 0) {
+        student.items.forEach((item, iIndex) => {
+          const itemStatus = this.getItemStatusLabel(item.status);
+          const itemStatusClass = this.getItemStatusClass(item.status);
+
+          html += `
+            <div class="entry-item">
+              <div class="entry-item-info">
+                <span class="entry-item-name">${escapeHtml(item.name)}</span>
+                <span class="entry-item-qty">×${item.quantity}</span>
+                <span class="entry-item-price">${formatCurrency(item.sellingPrice * item.quantity)}</span>
+                <span class="status-badge ${itemStatusClass}" style="font-size: 0.7rem;">${itemStatus}</span>
+              </div>
+              <div class="entry-item-actions">
+                ${this.renderItemActions(entry.invoiceNumber, sIndex, iIndex, item.status)}
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        html += '<p class="text-muted" style="font-size: 0.82rem;">No items.</p>';
+      }
+
+      html += '</div>';
+    });
+
+    return html;
+  },
+
+  getItemStatusLabel(status) {
+    switch (status) {
+      case 0:
+        return 'Delivered';
+      case 1:
+        return 'Pending';
+      case 2:
+        return 'Returned';
+      default:
+        return 'Unknown';
+    }
+  },
+
+  getItemStatusClass(status) {
+    switch (status) {
+      case 0:
+        return 'delivered';
+      case 1:
+        return 'pending';
+      case 2:
+        return 'returned';
+      default:
+        return '';
+    }
+  },
+
+  renderItemActions(invoiceNumber, studentIndex, itemIndex, status) {
+    let actions = '';
+
+    if (status === 1) {
+      // Pending → can deliver or return
+      actions += `<button class="btn btn-success btn-sm" onclick="event.stopPropagation(); Entries.updateItemStatus('${escapeHtml(invoiceNumber)}', ${studentIndex}, ${itemIndex}, 0)">✅ Deliver</button>`;
+      actions += `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); Entries.updateItemStatus('${escapeHtml(invoiceNumber)}', ${studentIndex}, ${itemIndex}, 2)">↩️ Return</button>`;
+    } else if (status === 0) {
+      // Delivered → can return
+      actions += `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); Entries.updateItemStatus('${escapeHtml(invoiceNumber)}', ${studentIndex}, ${itemIndex}, 2)">↩️ Return</button>`;
+    }
+    // Returned → no actions
+
+    return actions;
+  },
+
+  async updateItemStatus(invoiceNumber, studentIndex, itemIndex, newStatus) {
+    const result = await API.post('updateItemStatus', {
+      invoiceNumber,
+      studentIndex,
+      itemIndex,
+      newStatus,
+    });
+
+    if (result && result.success) {
+      // Update local state
+      const entry = AppState.entries.find(
+        (e) => e.invoiceNumber === invoiceNumber
+      );
+      if (entry && entry.students[studentIndex] && entry.students[studentIndex].items[itemIndex]) {
+        entry.students[studentIndex].items[itemIndex].status = newStatus;
+      }
+
+      this.applyFiltersAndSearch();
+      showToast('Status updated successfully', 'success');
+    }
+  },
+};
+
+// ============================================
+// ADMIN MODULE
+// ============================================
+const Admin = {
+  async login() {
+    const username = document.getElementById('admin-username').value.trim();
+    const password = document.getElementById('admin-password').value.trim();
+    const errorEl = document.getElementById('login-error');
+
+    if (!username || !password) {
+      errorEl.textContent = 'Please enter both username and password.';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    errorEl.classList.add('hidden');
+
+    // code.gs login is a GET endpoint
+    const res = await API.get('login', { username, password });
+
+    if (res && res.success && res.data && res.data.authenticated) {
+      AppState.isAdminLoggedIn = true;
+      document.getElementById('admin-login').classList.add('hidden');
+      document.getElementById('admin-dashboard').classList.remove('hidden');
+      this.loadDashboard();
+      showToast('Login successful', 'success');
+    } else {
+      errorEl.textContent = 'Invalid credentials.';
+      errorEl.classList.remove('hidden');
+    }
+  },
+
+  logout() {
+    AppState.isAdminLoggedIn = false;
+    AppState.adminData = { schools: [], classes: [], books: [], notebooks: [] };
+    document.getElementById('admin-dashboard').classList.add('hidden');
+    document.getElementById('admin-login').classList.remove('hidden');
+    document.getElementById('admin-username').value = '';
+    document.getElementById('admin-password').value = '';
+    document.getElementById('login-error').classList.add('hidden');
+    showToast('Logged out', 'info');
+  },
+
+  async loadDashboard() {
+    await this.loadStats();
+    this.switchTab(AppState.adminTab);
+  },
+
+  async loadStats() {
+    const res = await API.get('getStats');
+    if (res && res.success && res.data) {
+      this.renderStats(res.data);
+    }
+  },
+
+  renderStats(stats) {
+    document.getElementById('stat-total-invoices').textContent =
+      stats.totalInvoices || 0;
+    document.getElementById('stat-pending').textContent =
+      stats.totalPending || 0;
+    document.getElementById('stat-completed').textContent =
+      stats.totalCompleted || 0;
+    document.getElementById('stat-returned').textContent =
+      stats.totalReturned || 0;
+  },
+
+  switchTab(tab) {
+    AppState.adminTab = tab;
+
+    // Update tab buttons
+    document.querySelectorAll('.admin-tab').forEach((t) => {
+      t.classList.remove('active');
+      if (t.dataset.tab === tab) {
+        t.classList.add('active');
+      }
+    });
+
+    // Show/hide panels
+    document.querySelectorAll('.admin-panel').forEach((p) => {
+      p.classList.add('hidden');
+      p.classList.remove('active');
+    });
+    const panel = document.getElementById(`admin-${tab}`);
+    if (panel) {
+      panel.classList.remove('hidden');
+      panel.classList.add('active');
+    }
+
+    // Load data
+    switch (tab) {
+      case 'schools':
+        this.loadSchools();
+        break;
+      case 'classes':
+        this.loadClasses();
+        break;
+      case 'books':
+        this.loadBooks();
+        break;
+      case 'notebooks':
+        this.loadNotebooks();
+        break;
+    }
+  },
+
+  // ---- SCHOOLS CRUD ----
+  async loadSchools() {
+    const res = await API.get('getSchools');
+    if (res && res.success && res.data) {
+      AppState.adminData.schools = res.data.map(s => ({
+        index: s.schoolIndex,
+        name: s.schoolName,
+        status: Number(s.status),
+      }));
+    } else {
+      AppState.adminData.schools = [];
+    }
+    this.renderSchools();
+  },
+
+  renderSchools() {
+    const panel = document.getElementById('admin-schools');
+    let html = `
+      <div class="admin-panel-header">
+        <h3>Manage Schools</h3>
+        <button class="btn btn-primary btn-sm" onclick="Admin.showAddSchoolModal()">➕ Add School</button>
+      </div>
+      <div class="admin-list">
+    `;
+
+    if (AppState.adminData.schools.length === 0) {
+      html += `
+        <div class="empty-state" style="padding: 40px;">
+          <div class="empty-state-icon">🏫</div>
+          <div class="empty-state-title">No Schools</div>
+          <div class="empty-state-desc">Click "Add School" to create one.</div>
         </div>
       `;
     } else {
-      // Other — fully manual
-      row.innerHTML = `
-        <div class="item-row-header">
-          <span class="item-row-num">Item #${idx + 1}</span>
-          <button class="delete-item-btn" data-type="${type}" data-idx="${idx}" title="Remove"><i class="ph ph-trash"></i></button>
-        </div>
-        <div class="item-row-fields">
-          <div style="grid-column:1/-1"><span class="item-field-label">Item Name</span><input class="manual-field" data-type="${type}" data-idx="${idx}" data-field="name" value="${item.name}" placeholder="Enter item name"></div>
-          <div><span class="item-field-label">Identity No.</span><input class="manual-field" data-type="${type}" data-idx="${idx}" data-field="itemId" value="${item.itemId}" placeholder="e.g. OT-3001"></div>
-          <div><span class="item-field-label">MRP</span><input class="manual-field" data-type="${type}" data-idx="${idx}" data-field="mrp" value="${item.mrp}" placeholder="₹" type="number"></div>
-          <div><span class="item-field-label">Selling Price</span><input class="manual-field" data-type="${type}" data-idx="${idx}" data-field="sellingPrice" value="${item.sellingPrice}" placeholder="₹" type="number"></div>
-          <div class="notes-field"><span class="item-field-label">Notes</span><input class="item-notes" data-type="${type}" data-idx="${idx}" value="${item.notes || ''}" placeholder="Add notes…"></div>
-        </div>
-      `;
+      AppState.adminData.schools.forEach((school) => {
+        const isDisabled = school.status === 0;
+        html += `
+          <div class="admin-list-item ${isDisabled ? 'disabled' : ''}">
+            <div class="admin-list-info">
+              <span class="admin-list-name">${escapeHtml(school.name)}</span>
+              <span class="admin-list-meta">Index: ${school.index} | Status: ${isDisabled ? 'Disabled' : 'Active'}</span>
+            </div>
+            <div class="admin-list-actions">
+              <button class="btn btn-info btn-sm" onclick="Admin.showEditSchoolModal(${JSON.stringify(school).replace(/"/g, '&quot;')})">✏️ Edit</button>
+              <button class="btn ${isDisabled ? 'btn-success' : 'btn-warning'} btn-sm" onclick="Admin.toggleSchool(${school.index}, ${isDisabled ? 1 : 0})">
+                ${isDisabled ? '✅ Enable' : '⏸️ Disable'}
+              </button>
+            </div>
+          </div>
+        `;
+      });
     }
 
-    list.appendChild(row);
-  });
+    html += '</div>';
+    panel.innerHTML = html;
+  },
 
-  // Bind events for this list
-  bindItemListEvents(type, items, list);
-}
-
-function bindItemListEvents(type, items, list) {
-  // Dropdown select (Books / Notebooks)
-  list.querySelectorAll('.item-select').forEach(sel => {
-    sel.addEventListener('change', (e) => {
-      const idx = parseInt(e.target.dataset.idx);
-      const catalog = type === 'books' ? booksCatalog : notebooksCatalog;
-      const val = e.target.value;
-      if (val === '') {
-        items[idx] = { ...items[idx], catalogIdx: '', name: '', itemId: '', mrp: '', sellingPrice: '' };
-      } else {
-        const ci = parseInt(val);
-        const product = catalog[ci];
-        items[idx] = { ...items[idx], catalogIdx: val, name: product.name, itemId: product.itemId, mrp: product.mrp, sellingPrice: product.sellingPrice };
-      }
-      renderItemList(type, items);
+  showAddSchoolModal() {
+    Modal.setupAdminModal('Add School', [
+      { id: 'school-name', label: 'School Name', type: 'text', placeholder: 'Enter school name', value: '' },
+    ], (data) => {
+      this.saveSchool({ name: data['school-name'], isNew: true });
     });
-  });
+  },
 
-  // Notes
-  list.querySelectorAll('.item-notes').forEach(inp => {
-    inp.addEventListener('input', (e) => {
-      const idx = parseInt(e.target.dataset.idx);
-      items[idx].notes = e.target.value;
+  showEditSchoolModal(school) {
+    Modal.setupAdminModal('Edit School', [
+      { id: 'school-name', label: 'School Name', type: 'text', placeholder: 'Enter school name', value: school.name },
+    ], (data) => {
+      this.saveSchool({ name: data['school-name'], index: school.index, isNew: false });
     });
-  });
+  },
 
-  // Manual fields (Other section)
-  list.querySelectorAll('.manual-field').forEach(inp => {
-    inp.addEventListener('input', (e) => {
-      const idx = parseInt(e.target.dataset.idx);
-      const field = e.target.dataset.field;
-      items[idx][field] = e.target.value;
+  async saveSchool(data) {
+    const action = data.isNew ? 'addSchool' : 'editSchool';
+    const body = { schoolName: data.name };
+    if (!data.isNew) body.schoolIndex = data.index;
+
+    const result = await API.post(action, body);
+    if (result && result.success) {
+      showToast(`School ${data.isNew ? 'added' : 'updated'} successfully`, 'success');
+      Modal.hide('modal-admin');
+      this.loadSchools();
+    }
+  },
+
+  async toggleSchool(schoolIndex, newStatus) {
+    const result = await API.post('toggleSchool', {
+      schoolIndex: schoolIndex,
+      status: newStatus,
     });
-  });
+    if (result && result.success) {
+      showToast(`School ${newStatus === 0 ? 'disabled' : 'enabled'}`, 'success');
+      this.loadSchools();
+    }
+  },
 
-  // Delete
-  list.querySelectorAll('.delete-item-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const idx = parseInt(e.currentTarget.dataset.idx);
-      const t = e.currentTarget.dataset.type;
-      const student = state.students[state.activeStudentIdx];
-      student[t].splice(idx, 1);
-      renderItemList(t, student[t]);
-    });
-  });
-}
+  // ---- CLASSES CRUD ----
+  async loadClasses() {
+    const res = await API.get('getClasses');
+    if (res && res.success && res.data) {
+      // Enrich with school name from adminData.schools
+      AppState.adminData.classes = res.data.map(c => {
+        const school = AppState.adminData.schools.find(s => Number(s.index) === Number(c.schoolIndex));
+        return {
+          index: c.classIndex,
+          name: c.className,
+          schoolIndex: c.schoolIndex,
+          schoolName: school ? school.name : 'Unknown',
+          status: Number(c.status),
+        };
+      });
+    } else {
+      AppState.adminData.classes = [];
+    }
+    this.renderClasses();
+  },
 
-// ---- Duplicate ----
-function handleDuplicate() {
-  const currentStudent = state.students[state.activeStudentIdx];
-  const clone = {
-    label: `Student ${state.students.length + 1}`,
-    books: currentStudent.books.map(b => ({ ...b, _uid: uid() })),
-    notebooks: currentStudent.notebooks.map(n => ({ ...n, _uid: uid() })),
-    other: currentStudent.other.map(o => ({ ...o, _uid: uid() })),
-  };
-  state.students.push(clone);
-  state.activeStudentIdx = state.students.length - 1;
-  showToast(`Duplicated as ${clone.label}`);
-  render();
-}
-
-// ---- New Student ----
-function handleNewStudent() {
-  const nextIdx = state.students.length + 1;
-  state.students.push(createEmptyStudent(nextIdx));
-  state.activeStudentIdx = state.students.length - 1;
-  showToast(`Started ${state.students[state.activeStudentIdx].label}`);
-  render();
-}
-
-// =================================================================
-// DETAILS / CUSTOMER VIEW
-// =================================================================
-function renderDetails(c) {
-  const now = new Date();
-  const dateVal = now.toISOString().split('T')[0];
-  const timeVal = now.toTimeString().slice(0, 5);
-
-  // Build summary
-  let totalItems = 0;
-  state.students.forEach(s => {
-    totalItems += s.books.length + s.notebooks.length + s.other.length;
-  });
-
-  let summaryHtml = state.students.map(s => {
-    const cnt = s.books.length + s.notebooks.length + s.other.length;
-    return `<div class="invoice-summary-item"><span>${s.label}</span><span>${cnt} item(s)</span></div>`;
-  }).join('');
-
-  c.innerHTML = `
-    <div class="page-header">
-      <button class="btn btn-secondary" id="btn-back-invoice" style="margin-bottom:1rem;">
-        <i class="ph ph-arrow-left"></i> Back to Invoice
-      </button>
-      <h1 class="page-title">Customer Details</h1>
-      <p class="page-subtitle">${state.selectedSchool.name} — ${state.selectedClass.name}</p>
-    </div>
-
-    <div class="card details-card">
-      <div class="invoice-summary">
-        <h4><i class="ph ph-list-checks"></i> Invoice Summary</h4>
-        <div class="invoice-summary-item" style="font-weight:600;border-bottom:1px solid var(--color-border);padding-bottom:0.5rem;margin-bottom:0.25rem;">
-          <span>${state.students.length} Student(s)</span>
-          <span>${totalItems} Total Items</span>
-        </div>
-        ${summaryHtml}
+  renderClasses() {
+    const panel = document.getElementById('admin-classes');
+    let html = `
+      <div class="admin-panel-header">
+        <h3>Manage Classes</h3>
+        <button class="btn btn-primary btn-sm" onclick="Admin.showAddClassModal()">➕ Add Class</button>
       </div>
+      <div class="admin-list">
+    `;
 
-      <div class="form-group">
-        <label class="form-label">Mobile Number</label>
-        <input type="tel" class="form-control" id="inp-mobile" placeholder="+91 00000 00000">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-        <div class="form-group">
-          <label class="form-label">Date</label>
-          <input type="date" class="form-control" id="inp-date" value="${dateVal}">
+    if (AppState.adminData.classes.length === 0) {
+      html += `
+        <div class="empty-state" style="padding: 40px;">
+          <div class="empty-state-icon">📖</div>
+          <div class="empty-state-title">No Classes</div>
+          <div class="empty-state-desc">Click "Add Class" to create one.</div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Time</label>
-          <input type="time" class="form-control" id="inp-time" value="${timeVal}">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Message / Notes</label>
-        <textarea class="form-control" id="inp-message" rows="3" placeholder="Any special instructions…"></textarea>
-      </div>
-      <button class="btn btn-primary" id="btn-complete" style="width:100%;">
-        Complete Transaction <i class="ph ph-check-circle"></i>
-      </button>
-    </div>
-  `;
+      `;
+    } else {
+      AppState.adminData.classes.forEach((cls) => {
+        const isDisabled = cls.status === 0;
+        html += `
+          <div class="admin-list-item ${isDisabled ? 'disabled' : ''}">
+            <div class="admin-list-info">
+              <span class="admin-list-name">${escapeHtml(cls.name)}</span>
+              <span class="admin-list-meta">School: ${escapeHtml(cls.schoolName || '')} | Index: ${cls.index} | Status: ${isDisabled ? 'Disabled' : 'Active'}</span>
+            </div>
+            <div class="admin-list-actions">
+              <button class="btn btn-info btn-sm" onclick="Admin.showEditClassModal(${JSON.stringify(cls).replace(/"/g, '&quot;')})">✏️ Edit</button>
+              <button class="btn ${isDisabled ? 'btn-success' : 'btn-warning'} btn-sm" onclick="Admin.toggleClass(${cls.index}, ${isDisabled ? 1 : 0})">
+                ${isDisabled ? '✅ Enable' : '⏸️ Disable'}
+              </button>
+            </div>
+          </div>
+        `;
+      });
+    }
 
-  setTimeout(() => {
-    document.getElementById('btn-back-invoice').addEventListener('click', () => {
-      state.homeStep = 'invoice';
-      render();
+    html += '</div>';
+    panel.innerHTML = html;
+  },
+
+  showAddClassModal() {
+    const schoolOptions = AppState.adminData.schools
+      .filter((s) => s.status !== 0)
+      .map((s) => ({ value: s.index, label: s.name }));
+
+    Modal.setupAdminModal('Add Class', [
+      { id: 'class-school', label: 'School', type: 'select', options: schoolOptions, value: '' },
+      { id: 'class-name', label: 'Class Name', type: 'text', placeholder: 'Enter class name', value: '' },
+    ], (data) => {
+      this.saveClass({ schoolIndex: data['class-school'], name: data['class-name'], isNew: true });
     });
+  },
 
-    document.getElementById('btn-complete').addEventListener('click', handleCompleteTransaction);
-  }, 0);
-}
+  showEditClassModal(cls) {
+    const schoolOptions = AppState.adminData.schools
+      .filter((s) => s.status !== 0)
+      .map((s) => ({ value: s.index, label: s.name }));
 
-function handleCompleteTransaction() {
-  const mobile = document.getElementById('inp-mobile').value.trim() || '+91 0000000000';
-  const date = document.getElementById('inp-date').value;
-  const time = document.getElementById('inp-time').value;
-  const message = document.getElementById('inp-message').value;
+    Modal.setupAdminModal('Edit Class', [
+      { id: 'class-school', label: 'School', type: 'select', options: schoolOptions, value: cls.schoolIndex || '' },
+      { id: 'class-name', label: 'Class Name', type: 'text', placeholder: 'Enter class name', value: cls.name },
+    ], (data) => {
+      this.saveClass({ schoolIndex: data['class-school'], name: data['class-name'], index: cls.index, isNew: false });
+    });
+  },
 
-  const entry = {
-    id: generateEntryId(),
-    school: state.selectedSchool.name,
-    class: state.selectedClass.name,
-    mobile: mobile,
-    status: 'pending',
-    date: date,
-    time: time,
-    message: message,
-    students: JSON.parse(JSON.stringify(state.students)),
-  };
+  async saveClass(data) {
+    const action = data.isNew ? 'addClass' : 'editClass';
+    const body = { className: data.name, schoolIndex: parseInt(data.schoolIndex) };
+    if (!data.isNew) body.classIndex = data.index;
 
-  saveEntry(entry);
-  showToast(`Transaction ${entry.id} saved to Pending!`);
+    const result = await API.post(action, body);
+    if (result && result.success) {
+      showToast(`Class ${data.isNew ? 'added' : 'updated'} successfully`, 'success');
+      Modal.hide('modal-admin');
+      this.loadClasses();
+    }
+  },
 
-  // Reset and go home
-  resetInvoice();
-  state.homeStep = 'school';
-  render();
-}
+  async toggleClass(classIndex, newStatus) {
+    const result = await API.post('toggleClass', {
+      classIndex: classIndex,
+      status: newStatus,
+    });
+    if (result && result.success) {
+      showToast(`Class ${newStatus === 0 ? 'disabled' : 'enabled'}`, 'success');
+      this.loadClasses();
+    }
+  },
 
-// =================================================================
-// ENTRIES MODULE
-// =================================================================
-function renderEntries() {
-  const allEntries = loadEntries();
-  const tabs = ['all', 'pending', 'partial', 'completed', 'return'];
-  const tabLabels = { all: 'All Entries', pending: 'Pending', partial: 'Partial', completed: 'Completed', return: 'Return' };
+  // ---- BOOKS CRUD ----
+  async loadBooks() {
+    const res = await API.get('getBooks');
+    if (res && res.success && res.data) {
+      AppState.adminData.books = res.data.map(b => {
+        const cls = AppState.adminData.classes.find(c => Number(c.index) === Number(b.classIndex));
+        return {
+          index: b.bookIndex,
+          identity: b.bookIdentity,
+          name: b.bookName,
+          mrp: b.mrp,
+          sellingPrice: b.sellingPrice,
+          classIndex: b.classIndex,
+          className: cls ? `${cls.schoolName} — ${cls.name}` : 'Unknown',
+          status: Number(b.status),
+        };
+      });
+    } else {
+      AppState.adminData.books = [];
+    }
+    this.renderBooks();
+  },
 
-  // Filter by tab
-  let filtered = state.entriesTab === 'all'
-    ? allEntries
-    : allEntries.filter(e => e.status === state.entriesTab);
+  renderBooks() {
+    const panel = document.getElementById('admin-books');
+    let html = `
+      <div class="admin-panel-header">
+        <h3>Manage Books</h3>
+        <button class="btn btn-primary btn-sm" onclick="Admin.showAddBookModal()">➕ Add Book</button>
+      </div>
+      <div class="admin-list">
+    `;
 
-  // Filter by search
-  const search = state.entriesSearch.toLowerCase();
-  if (search) {
-    filtered = filtered.filter(e =>
-      e.id.toLowerCase().includes(search) ||
-      e.mobile.toLowerCase().includes(search) ||
-      e.school.toLowerCase().includes(search)
-    );
-  }
-
-  // Tab counts
-  const counts = {};
-  tabs.forEach(t => {
-    counts[t] = t === 'all' ? allEntries.length : allEntries.filter(e => e.status === t).length;
-  });
-
-  const c = document.createElement('div');
-  c.className = 'view-section active';
-
-  c.innerHTML = `
-    <div class="page-header">
-      <h1 class="page-title">Entries Management</h1>
-      <p class="page-subtitle">View and manage previous invoices</p>
-    </div>
-
-    <div class="filter-bar">
-      <input type="text" class="form-control search-input" id="entries-search" placeholder="Search by Entry ID, Mobile, or School…" value="${state.entriesSearch}">
-      <button class="btn btn-secondary"><i class="ph ph-funnel"></i> Filter</button>
-    </div>
-
-    <div class="tabs-container" id="entries-tabs">
-      ${tabs.map(t => `
-        <div class="tab ${t === state.entriesTab ? 'active' : ''}" data-tab="${t}">
-          ${tabLabels[t]}<span class="tab-count">${counts[t]}</span>
+    if (AppState.adminData.books.length === 0) {
+      html += `
+        <div class="empty-state" style="padding: 40px;">
+          <div class="empty-state-icon">📕</div>
+          <div class="empty-state-title">No Books</div>
+          <div class="empty-state-desc">Click "Add Book" to create one.</div>
         </div>
-      `).join('')}
-    </div>
+      `;
+    } else {
+      AppState.adminData.books.forEach((book) => {
+        const isDisabled = book.status === 0;
+        html += `
+          <div class="admin-list-item ${isDisabled ? 'disabled' : ''}">
+            <div class="admin-list-info">
+              <span class="admin-list-name">[${escapeHtml(book.identity || '')}] ${escapeHtml(book.name)}</span>
+              <span class="admin-list-meta">Class: ${escapeHtml(book.className || '')} | MRP: ${formatCurrency(book.mrp)} | Sell: ${formatCurrency(book.sellingPrice)} | Status: ${isDisabled ? 'Disabled' : 'Active'}</span>
+            </div>
+            <div class="admin-list-actions">
+              <button class="btn btn-info btn-sm" onclick="Admin.showEditBookModal(${JSON.stringify(book).replace(/"/g, '&quot;')})">✏️ Edit</button>
+              <button class="btn ${isDisabled ? 'btn-success' : 'btn-warning'} btn-sm" onclick="Admin.toggleBook(${book.index}, ${isDisabled ? 1 : 0})">
+                ${isDisabled ? '✅ Enable' : '⏸️ Disable'}
+              </button>
+            </div>
+          </div>
+        `;
+      });
+    }
 
-    <div class="entries-table-wrapper">
-      <table class="entries-table">
-        <thead>
-          <tr>
-            <th>Entry ID</th>
-            <th>School Name</th>
-            <th>Class</th>
-            <th>Mobile</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="entries-tbody">
-          ${filtered.length === 0
-            ? `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-text-muted);">No entries found</td></tr>`
-            : filtered.map(entry => `
-            <tr>
-              <td><strong>${entry.id}</strong></td>
-              <td>${entry.school}</td>
-              <td>${entry.class}</td>
-              <td>${entry.mobile}</td>
-              <td>${entry.date}</td>
-              <td><span class="status-badge status-${entry.status}">${entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}</span></td>
-              <td>
-                <button class="btn-icon" style="background:transparent;color:var(--color-primary);" title="View Details"><i class="ph ph-eye"></i></button>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
+    html += '</div>';
+    panel.innerHTML = html;
+  },
 
-  mainContent.appendChild(c);
+  showAddBookModal() {
+    const classOptions = AppState.adminData.classes
+      .filter((c) => c.status !== 0)
+      .map((c) => ({ value: c.index, label: `${c.schoolName || ''} — ${c.name}` }));
 
-  // Events
-  setTimeout(() => {
-    document.querySelectorAll('#entries-tabs .tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        state.entriesTab = tab.dataset.tab;
-        render();
+    Modal.setupAdminModal('Add Book', [
+      { id: 'book-class', label: 'Class', type: 'select', options: classOptions, value: '' },
+      { id: 'book-identity', label: 'Identity Code', type: 'text', placeholder: 'e.g., ENG1', value: '' },
+      { id: 'book-name', label: 'Book Name', type: 'text', placeholder: 'Enter book name', value: '' },
+      { id: 'book-mrp', label: 'MRP', type: 'number', placeholder: '0.00', value: '' },
+      { id: 'book-selling-price', label: 'Selling Price', type: 'number', placeholder: '0.00', value: '' },
+    ], (data) => {
+      this.saveBook({
+        classIndex: data['book-class'],
+        identity: data['book-identity'],
+        name: data['book-name'],
+        mrp: parseFloat(data['book-mrp']) || 0,
+        sellingPrice: parseFloat(data['book-selling-price']) || 0,
+        isNew: true,
       });
     });
+  },
 
-    document.getElementById('entries-search').addEventListener('input', (e) => {
-      state.entriesSearch = e.target.value;
-      render();
+  showEditBookModal(book) {
+    const classOptions = AppState.adminData.classes
+      .filter((c) => c.status !== 0)
+      .map((c) => ({ value: c.index, label: `${c.schoolName || ''} — ${c.name}` }));
+
+    Modal.setupAdminModal('Edit Book', [
+      { id: 'book-class', label: 'Class', type: 'select', options: classOptions, value: book.classIndex || '' },
+      { id: 'book-identity', label: 'Identity Code', type: 'text', placeholder: 'e.g., ENG1', value: book.identity || '' },
+      { id: 'book-name', label: 'Book Name', type: 'text', placeholder: 'Enter book name', value: book.name || '' },
+      { id: 'book-mrp', label: 'MRP', type: 'number', placeholder: '0.00', value: book.mrp || '' },
+      { id: 'book-selling-price', label: 'Selling Price', type: 'number', placeholder: '0.00', value: book.sellingPrice || '' },
+    ], (data) => {
+      this.saveBook({
+        classIndex: data['book-class'],
+        identity: data['book-identity'],
+        name: data['book-name'],
+        mrp: parseFloat(data['book-mrp']) || 0,
+        sellingPrice: parseFloat(data['book-selling-price']) || 0,
+        index: book.index,
+        isNew: false,
+      });
     });
-  }, 0);
-}
+  },
 
-// =================================================================
-// ADMIN MODULE
-// =================================================================
-function renderAdmin() {
-  const c = document.createElement('div');
-  c.className = 'view-section active admin-login-wrapper';
+  async saveBook(data) {
+    const action = data.isNew ? 'addBook' : 'editBook';
+    const body = {
+      classIndex: parseInt(data.classIndex),
+      bookIdentity: data.identity,
+      bookName: data.name,
+      mrp: data.mrp,
+      sellingPrice: data.sellingPrice,
+    };
+    if (!data.isNew) body.bookIndex = data.index;
 
-  c.innerHTML = `
-    <div class="login-card">
-      <div class="login-header">
-        <i class="ph ph-user-circle login-icon"></i>
-        <h2 class="page-title">Admin Access</h2>
-        <p class="page-subtitle">Login to manage store settings</p>
+    const result = await API.post(action, body);
+    if (result && result.success) {
+      showToast(`Book ${data.isNew ? 'added' : 'updated'} successfully`, 'success');
+      Modal.hide('modal-admin');
+      this.loadBooks();
+    }
+  },
+
+  async toggleBook(bookIndex, newStatus) {
+    const result = await API.post('toggleBook', {
+      bookIndex: bookIndex,
+      status: newStatus,
+    });
+    if (result && result.success) {
+      showToast(`Book ${newStatus === 0 ? 'disabled' : 'enabled'}`, 'success');
+      this.loadBooks();
+    }
+  },
+
+  // ---- NOTEBOOKS CRUD ----
+  async loadNotebooks() {
+    const res = await API.get('getNotebooks');
+    if (res && res.success && res.data) {
+      AppState.adminData.notebooks = res.data.map(nb => {
+        const cls = AppState.adminData.classes.find(c => Number(c.index) === Number(nb.classIndex));
+        return {
+          index: nb.notebookIndex,
+          identity: nb.notebookIdentity,
+          name: nb.notebookName,
+          mrp: nb.mrp,
+          sellingPrice: nb.sellingPrice,
+          classIndex: nb.classIndex,
+          className: cls ? `${cls.schoolName} — ${cls.name}` : 'Unknown',
+          status: Number(nb.status),
+        };
+      });
+    } else {
+      AppState.adminData.notebooks = [];
+    }
+    this.renderNotebooks();
+  },
+
+  renderNotebooks() {
+    const panel = document.getElementById('admin-notebooks');
+    let html = `
+      <div class="admin-panel-header">
+        <h3>Manage Notebooks</h3>
+        <button class="btn btn-primary btn-sm" onclick="Admin.showAddNotebookModal()">➕ Add Notebook</button>
       </div>
+      <div class="admin-list">
+    `;
 
-      <div class="form-group">
-        <label class="form-label">Username</label>
-        <div style="position:relative;">
-          <i class="ph ph-user" style="position:absolute;left:1rem;top:1rem;color:var(--color-text-muted);"></i>
-          <input type="text" class="form-control" placeholder="Enter admin username" style="padding-left:2.5rem;">
+    if (AppState.adminData.notebooks.length === 0) {
+      html += `
+        <div class="empty-state" style="padding: 40px;">
+          <div class="empty-state-icon">📓</div>
+          <div class="empty-state-title">No Notebooks</div>
+          <div class="empty-state-desc">Click "Add Notebook" to create one.</div>
         </div>
-      </div>
+      `;
+    } else {
+      AppState.adminData.notebooks.forEach((nb) => {
+        const isDisabled = nb.status === 0;
+        html += `
+          <div class="admin-list-item ${isDisabled ? 'disabled' : ''}">
+            <div class="admin-list-info">
+              <span class="admin-list-name">[${escapeHtml(nb.identity || '')}] ${escapeHtml(nb.name)}</span>
+              <span class="admin-list-meta">Class: ${escapeHtml(nb.className || '')} | MRP: ${formatCurrency(nb.mrp)} | Sell: ${formatCurrency(nb.sellingPrice)} | Status: ${isDisabled ? 'Disabled' : 'Active'}</span>
+            </div>
+            <div class="admin-list-actions">
+              <button class="btn btn-info btn-sm" onclick="Admin.showEditNotebookModal(${JSON.stringify(nb).replace(/"/g, '&quot;')})">✏️ Edit</button>
+              <button class="btn ${isDisabled ? 'btn-success' : 'btn-warning'} btn-sm" onclick="Admin.toggleNotebook(${nb.index}, ${isDisabled ? 1 : 0})">
+                ${isDisabled ? '✅ Enable' : '⏸️ Disable'}
+              </button>
+            </div>
+          </div>
+        `;
+      });
+    }
 
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <div style="position:relative;">
-          <i class="ph ph-lock" style="position:absolute;left:1rem;top:1rem;color:var(--color-text-muted);"></i>
-          <input type="password" class="form-control" placeholder="Enter password" style="padding-left:2.5rem;">
-        </div>
-      </div>
+    html += '</div>';
+    panel.innerHTML = html;
+  },
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;color:var(--color-text-muted);cursor:pointer;">
-          <input type="checkbox"> Remember me
-        </label>
-        <a href="#" style="font-size:0.875rem;color:var(--color-primary);text-decoration:none;font-weight:500;">Forgot Password?</a>
-      </div>
+  showAddNotebookModal() {
+    const classOptions = AppState.adminData.classes
+      .filter((c) => c.status !== 0)
+      .map((c) => ({ value: c.index, label: `${c.schoolName || ''} — ${c.name}` }));
 
-      <button class="btn btn-primary" style="width:100%;margin-bottom:1.5rem;">Login <i class="ph ph-sign-in"></i></button>
+    Modal.setupAdminModal('Add Notebook', [
+      { id: 'nb-class', label: 'Class', type: 'select', options: classOptions, value: '' },
+      { id: 'nb-identity', label: 'Identity Code', type: 'text', placeholder: 'e.g., NB1', value: '' },
+      { id: 'nb-name', label: 'Notebook Name', type: 'text', placeholder: 'Enter notebook name', value: '' },
+      { id: 'nb-mrp', label: 'MRP', type: 'number', placeholder: '0.00', value: '' },
+      { id: 'nb-selling-price', label: 'Selling Price', type: 'number', placeholder: '0.00', value: '' },
+    ], (data) => {
+      this.saveNotebook({
+        classIndex: data['nb-class'],
+        identity: data['nb-identity'],
+        name: data['nb-name'],
+        mrp: parseFloat(data['nb-mrp']) || 0,
+        sellingPrice: parseFloat(data['nb-selling-price']) || 0,
+        isNew: true,
+      });
+    });
+  },
 
-      <div style="border-top:1px dashed var(--color-border);padding-top:1.5rem;font-size:0.875rem;color:var(--color-text-muted);text-align:center;">
-        <strong>Future Scope:</strong>
-        <p style="margin-top:0.5rem;">School, Class, Product & User Management, Reports & Analytics.</p>
-      </div>
-    </div>
-  `;
-  mainContent.appendChild(c);
-}
+  showEditNotebookModal(nb) {
+    const classOptions = AppState.adminData.classes
+      .filter((c) => c.status !== 0)
+      .map((c) => ({ value: c.index, label: `${c.schoolName || ''} — ${c.name}` }));
 
-// ---- Start ----
-init();
+    Modal.setupAdminModal('Edit Notebook', [
+      { id: 'nb-class', label: 'Class', type: 'select', options: classOptions, value: nb.classIndex || '' },
+      { id: 'nb-identity', label: 'Identity Code', type: 'text', placeholder: 'e.g., NB1', value: nb.identity || '' },
+      { id: 'nb-name', label: 'Notebook Name', type: 'text', placeholder: 'Enter notebook name', value: nb.name || '' },
+      { id: 'nb-mrp', label: 'MRP', type: 'number', placeholder: '0.00', value: nb.mrp || '' },
+      { id: 'nb-selling-price', label: 'Selling Price', type: 'number', placeholder: '0.00', value: nb.sellingPrice || '' },
+    ], (data) => {
+      this.saveNotebook({
+        classIndex: data['nb-class'],
+        identity: data['nb-identity'],
+        name: data['nb-name'],
+        mrp: parseFloat(data['nb-mrp']) || 0,
+        sellingPrice: parseFloat(data['nb-selling-price']) || 0,
+        index: nb.index,
+        isNew: false,
+      });
+    });
+  },
+
+  async saveNotebook(data) {
+    const action = data.isNew ? 'addNotebook' : 'editNotebook';
+    const body = {
+      classIndex: parseInt(data.classIndex),
+      notebookIdentity: data.identity,
+      notebookName: data.name,
+      mrp: data.mrp,
+      sellingPrice: data.sellingPrice,
+    };
+    if (!data.isNew) body.notebookIndex = data.index;
+
+    const result = await API.post(action, body);
+    if (result && result.success) {
+      showToast(`Notebook ${data.isNew ? 'added' : 'updated'} successfully`, 'success');
+      Modal.hide('modal-admin');
+      this.loadNotebooks();
+    }
+  },
+
+  async toggleNotebook(nbIndex, newStatus) {
+    const result = await API.post('toggleNotebook', {
+      notebookIndex: nbIndex,
+      status: newStatus,
+    });
+    if (result && result.success) {
+      showToast(`Notebook ${newStatus === 0 ? 'disabled' : 'enabled'}`, 'success');
+      this.loadNotebooks();
+    }
+  },
+};
+
+// ============================================
+// MODAL HELPERS
+// ============================================
+const Modal = {
+  show(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+  },
+
+  hide(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  },
+
+  hideAll() {
+    document.querySelectorAll('.modal').forEach((m) => {
+      m.classList.add('hidden');
+    });
+    document.body.style.overflow = '';
+  },
+
+  // Dynamic admin modal setup
+  _currentOnSave: null,
+
+  setupAdminModal(title, fields, onSave) {
+    document.getElementById('admin-modal-title').textContent = title;
+    const body = document.getElementById('admin-modal-body');
+
+    let html = '';
+    fields.forEach((field) => {
+      html += `<div class="form-group"><label for="${field.id}">${field.label}</label>`;
+
+      if (field.type === 'select') {
+        html += `<select id="${field.id}">`;
+        html += `<option value="">-- Select --</option>`;
+        if (field.options) {
+          field.options.forEach((opt) => {
+            const selected = String(opt.value) === String(field.value) ? 'selected' : '';
+            html += `<option value="${opt.value}" ${selected}>${escapeHtml(opt.label)}</option>`;
+          });
+        }
+        html += '</select>';
+      } else if (field.type === 'number') {
+        html += `<input type="number" id="${field.id}" placeholder="${field.placeholder || ''}" value="${field.value}" step="0.01" min="0">`;
+      } else {
+        html += `<input type="text" id="${field.id}" placeholder="${field.placeholder || ''}" value="${escapeHtml(String(field.value || ''))}">`;
+      }
+
+      html += '</div>';
+    });
+
+    body.innerHTML = html;
+    this._currentOnSave = onSave;
+    this._currentFields = fields;
+    this.show('modal-admin');
+  },
+
+  handleAdminSave() {
+    if (!this._currentOnSave || !this._currentFields) return;
+
+    const data = {};
+    this._currentFields.forEach((field) => {
+      const el = document.getElementById(field.id);
+      if (el) {
+        data[field.id] = el.value;
+      }
+    });
+
+    // Basic validation
+    let hasEmpty = false;
+    this._currentFields.forEach((field) => {
+      if (!data[field.id] && field.type !== 'number') {
+        hasEmpty = true;
+      }
+    });
+
+    if (hasEmpty) {
+      showToast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    this._currentOnSave(data);
+  },
+};
+
+// ============================================
+// EVENT LISTENERS & INITIALIZATION
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+  // --- Navigation ---
+  document.querySelectorAll('.nav-link').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const page = link.dataset.page;
+      if (page) {
+        Router.navigate(page);
+      }
+    });
+  });
+
+  // --- Back Buttons ---
+  document.getElementById('back-to-schools').addEventListener('click', () => {
+    Home.backToSchools();
+  });
+
+  document.getElementById('back-to-classes').addEventListener('click', () => {
+    Home.backToClasses();
+  });
+
+  // --- Student Tab Actions ---
+  document.getElementById('btn-duplicate').addEventListener('click', () => {
+    Invoice.duplicateStudent();
+  });
+
+  document.getElementById('btn-new-student').addEventListener('click', () => {
+    Invoice.addNewStudent();
+  });
+
+  // --- Continue / Checkout ---
+  document.getElementById('btn-continue').addEventListener('click', () => {
+    Invoice.showCheckoutModal();
+  });
+
+  // --- Checkout Modal ---
+  document.getElementById('btn-cancel-checkout').addEventListener('click', () => {
+    Modal.hide('modal-checkout');
+  });
+
+  document.getElementById('btn-complete-invoice').addEventListener('click', () => {
+    Invoice.completeInvoice();
+  });
+
+  // --- New Student Modal ---
+  document.getElementById('new-student-school').addEventListener('change', (e) => {
+    Invoice.onNewStudentSchoolChange(e.target.value);
+  });
+
+  document.getElementById('btn-cancel-new-student').addEventListener('click', () => {
+    Modal.hide('modal-new-student');
+  });
+
+  document.getElementById('btn-confirm-new-student').addEventListener('click', () => {
+    Invoice.confirmNewStudent();
+  });
+
+  // --- Admin Login ---
+  document.getElementById('btn-admin-login').addEventListener('click', () => {
+    Admin.login();
+  });
+
+  // Allow Enter key on password field
+  document.getElementById('admin-password').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      Admin.login();
+    }
+  });
+
+  // --- Admin Logout ---
+  document.getElementById('btn-admin-logout').addEventListener('click', () => {
+    Admin.logout();
+  });
+
+  // --- Admin Tabs ---
+  document.querySelectorAll('.admin-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const tabName = tab.dataset.tab;
+      if (tabName) {
+        Admin.switchTab(tabName);
+      }
+    });
+  });
+
+  // --- Admin Modal ---
+  document.getElementById('btn-cancel-admin').addEventListener('click', () => {
+    Modal.hide('modal-admin');
+  });
+
+  document.getElementById('btn-save-admin').addEventListener('click', () => {
+    Modal.handleAdminSave();
+  });
+
+  // --- Entries Search ---
+  document.getElementById('search-entries').addEventListener('input', (e) => {
+    Entries.searchEntries(e.target.value);
+  });
+
+  // --- Entries Filter Buttons ---
+  document.querySelectorAll('.filter-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const filter = btn.dataset.filter;
+      if (filter) {
+        Entries.filterEntries(filter);
+      }
+    });
+  });
+
+  // --- Modal Close Buttons (X) ---
+  document.querySelectorAll('.modal-close').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const modalId = btn.dataset.modal;
+      if (modalId) {
+        Modal.hide(modalId);
+      }
+    });
+  });
+
+  // --- Modal Overlay Click to Close ---
+  document.querySelectorAll('.modal-overlay').forEach((overlay) => {
+    overlay.addEventListener('click', () => {
+      const modal = overlay.closest('.modal');
+      if (modal) {
+        Modal.hide(modal.id);
+      }
+    });
+  });
+
+  // --- Keyboard shortcuts ---
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      Modal.hideAll();
+    }
+  });
+
+  // --- Initialize ---
+  Router.navigate('home');
+});
