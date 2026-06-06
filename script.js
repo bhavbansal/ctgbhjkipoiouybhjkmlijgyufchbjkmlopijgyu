@@ -980,9 +980,9 @@ const Entries = {
     if (query) {
       entries = entries.filter((entry) => {
         return (
-          (entry.customerName || '').toLowerCase().includes(query) ||
-          (entry.customerMobile || '').toLowerCase().includes(query) ||
-          (entry.invoiceNumber || '').toLowerCase().includes(query)
+          String(entry.customerName || '').toLowerCase().includes(query) ||
+          String(entry.customerMobile || '').toLowerCase().includes(query) ||
+          String(entry.invoiceNumber || '').toLowerCase().includes(query)
         );
       });
     }
@@ -1025,6 +1025,9 @@ const Entries = {
       .map((entry) => {
         const status = this.getInvoiceStatus(entry.students);
         const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+        const dateObj = new Date(`${entry.date}T${entry.time}`);
+        const dateStr = isNaN(dateObj) ? `${entry.date} ${entry.time}` : dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + ', ' + dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
         return `
           <div class="entry-card" id="entry-${escapeHtml(entry.invoiceNumber)}">
             <div class="entry-header" onclick="Entries.openInvoiceDetailsModal('${escapeHtml(entry.invoiceNumber)}')">
@@ -1037,7 +1040,7 @@ const Entries = {
               </div>
               <div class="entry-meta">
                 <span class="status-badge ${status}">${statusLabel}</span>
-                <span class="entry-date">${escapeHtml(entry.date || '')} ${escapeHtml(entry.time || '')}</span>
+                <span class="entry-date">${escapeHtml(dateStr)}</span>
               </div>
             </div>
           </div>
@@ -1095,12 +1098,15 @@ const Entries = {
 
     document.getElementById('invoice-details-title').textContent = `Invoice #${entry.invoiceNumber}`;
     
+    const dateObj = new Date(`${entry.date}T${entry.time}`);
+    const dateStr = isNaN(dateObj) ? `${entry.date} ${entry.time}` : dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + ', ' + dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
     let html = `
       <div style="margin-bottom: 24px; padding: 16px; background: #f7f7f7; border-radius: 16px; border: 2px solid var(--color-cloud-gray);">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div><strong>Customer Name:</strong><br/>${escapeHtml(entry.customerName)}</div>
           <div><strong>Mobile:</strong><br/>${escapeHtml(entry.customerMobile)}</div>
-          <div><strong>Date:</strong><br/>${escapeHtml(entry.date)} ${escapeHtml(entry.time)}</div>
+          <div><strong>Date:</strong><br/><span class="entry-date">${escapeHtml(dateStr)}</span></div>
           <div><strong>Status:</strong><br/><span class="status-badge ${this.getInvoiceStatus(entry.students)}">${this.getInvoiceStatus(entry.students).toUpperCase()}</span></div>
         </div>
         ${entry.invoiceMessage ? `<div class="mt-2"><strong>Message:</strong> ${escapeHtml(entry.invoiceMessage)}</div>` : ''}
@@ -1450,69 +1456,102 @@ const Admin = {
 
   renderClasses() {
     const panel = document.getElementById('admin-classes');
+    AppState.adminFilters = AppState.adminFilters || {};
+    
     let html = `
       <div class="admin-panel-header">
         <h3>Manage Classes</h3>
+      </div>
+      <div class="admin-filters" style="margin-bottom: 20px; background: #f7f7f7; padding: 16px; border-radius: var(--radius-cards);">
+        <label style="font-weight: 700; margin-bottom: 8px; display: block;">Select School</label>
+        <select id="filter-classes-school" onchange="Admin.onAdminFilterChange('classesSchool', this.value)" style="width: 100%; padding: 8px; border-radius: var(--radius-inputs);">
+          <option value="">-- Choose a School --</option>
+          ${AppState.adminData.schools.filter(s => s.status !== 0).map(s => `<option value="${s.index}" ${AppState.adminFilters.classesSchool == s.index ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div style="margin-bottom: 16px; display: flex; justify-content: flex-end;">
         <button class="btn btn-primary btn-sm" onclick="Admin.showAddClassModal()">➕ Add Class</button>
       </div>
       <div class="admin-list">
     `;
 
-    if (AppState.adminData.classes.length === 0) {
+    if (!AppState.adminFilters.classesSchool) {
       html += `
         <div class="empty-state" style="padding: 40px;">
-          <div class="empty-state-icon">📖</div>
-          <div class="empty-state-title">No Classes</div>
-          <div class="empty-state-desc">Click "Add Class" to create one.</div>
+          <div class="empty-state-title">Select a School</div>
+          <div class="empty-state-desc">Choose a school above to view its classes.</div>
         </div>
       `;
     } else {
-      AppState.adminData.classes.forEach((cls) => {
-        const isDisabled = cls.status === 0;
+      const filteredClasses = AppState.adminData.classes.filter(c => Number(c.schoolIndex) === Number(AppState.adminFilters.classesSchool));
+      
+      if (filteredClasses.length === 0) {
         html += `
-          <div class="admin-list-item ${isDisabled ? 'disabled' : ''}">
-            <div class="admin-list-info">
-              <span class="admin-list-name">${escapeHtml(cls.name)}</span>
-              <span class="admin-list-meta">School: ${escapeHtml(cls.schoolName || '')} | Index: ${cls.index} | Status: ${isDisabled ? 'Disabled' : 'Active'}</span>
-            </div>
-            <div class="admin-list-actions">
-              <button class="btn btn-info btn-sm" onclick="Admin.showEditClassModal(${JSON.stringify(cls).replace(/"/g, '&quot;')})">✏️ Edit</button>
-              <button class="btn ${isDisabled ? 'btn-success' : 'btn-warning'} btn-sm" onclick="Admin.toggleClass(${cls.index}, ${isDisabled ? 1 : 0})">
-                ${isDisabled ? '✅ Enable' : '⏸️ Disable'}
-              </button>
-            </div>
+          <div class="empty-state" style="padding: 40px;">
+            <div class="empty-state-icon">📖</div>
+            <div class="empty-state-title">No Classes</div>
+            <div class="empty-state-desc">Click "Add Class" to create one for this school.</div>
           </div>
         `;
-      });
+      } else {
+        filteredClasses.forEach((cls) => {
+          const isDisabled = cls.status === 0;
+          html += `
+            <div class="admin-list-item ${isDisabled ? 'disabled' : ''}">
+              <div class="admin-list-info">
+                <span class="admin-list-name">${escapeHtml(cls.name)}</span>
+                <span class="admin-list-meta">Index: ${cls.index} | Status: ${isDisabled ? 'Disabled' : 'Active'}</span>
+              </div>
+              <div class="admin-list-actions">
+                <button class="btn btn-info btn-sm" onclick="Admin.showEditClassModal(${JSON.stringify(cls).replace(/"/g, '&quot;')})">✏️ Edit</button>
+                <button class="btn ${isDisabled ? 'btn-success' : 'btn-warning'} btn-sm" onclick="Admin.toggleClass(${cls.index}, ${isDisabled ? 1 : 0})">
+                  ${isDisabled ? '✅ Enable' : '⏸️ Disable'}
+                </button>
+              </div>
+            </div>
+          `;
+        });
+      }
     }
 
     html += '</div>';
     panel.innerHTML = html;
   },
 
-  showAddClassModal() {
-    const schoolOptions = AppState.adminData.schools
-      .filter((s) => s.status !== 0)
-      .map((s) => ({ value: s.index, label: s.name }));
+  onAdminFilterChange(filterKey, value) {
+    AppState.adminFilters = AppState.adminFilters || {};
+    AppState.adminFilters[filterKey] = value;
+    
+    // Reset child filters if parent changes
+    if (filterKey === 'booksSchool') AppState.adminFilters.booksClass = '';
+    if (filterKey === 'notebooksSchool') AppState.adminFilters.notebooksClass = '';
 
-    Modal.setupAdminModal('Add Class', [
-      { id: 'class-school', label: 'School', type: 'select', options: schoolOptions, value: '' },
+    if (filterKey.startsWith('classes')) this.renderClasses();
+    if (filterKey.startsWith('books')) this.renderBooks();
+    if (filterKey.startsWith('notebooks')) this.renderNotebooks();
+  },
+
+  showAddClassModal() {
+    AppState.adminFilters = AppState.adminFilters || {};
+    if (!AppState.adminFilters.classesSchool) {
+      showToast('Please select a school first', 'error');
+      return;
+    }
+    
+    const school = AppState.adminData.schools.find(s => Number(s.index) === Number(AppState.adminFilters.classesSchool));
+
+    Modal.setupAdminModal(`Add Class (to ${school.name})`, [
       { id: 'class-name', label: 'Class Name', type: 'text', placeholder: 'Enter class name', value: '' },
     ], (data) => {
-      this.saveClass({ schoolIndex: data['class-school'], name: data['class-name'], isNew: true });
+      this.saveClass({ schoolIndex: AppState.adminFilters.classesSchool, name: data['class-name'], isNew: true });
     });
   },
 
   showEditClassModal(cls) {
-    const schoolOptions = AppState.adminData.schools
-      .filter((s) => s.status !== 0)
-      .map((s) => ({ value: s.index, label: s.name }));
-
     Modal.setupAdminModal('Edit Class', [
-      { id: 'class-school', label: 'School', type: 'select', options: schoolOptions, value: cls.schoolIndex || '' },
       { id: 'class-name', label: 'Class Name', type: 'text', placeholder: 'Enter class name', value: cls.name },
     ], (data) => {
-      this.saveClass({ schoolIndex: data['class-school'], name: data['class-name'], index: cls.index, isNew: false });
+      this.saveClass({ schoolIndex: cls.schoolIndex, name: data['class-name'], index: cls.index, isNew: false });
     });
   },
 
@@ -1565,40 +1604,73 @@ const Admin = {
 
   renderBooks() {
     const panel = document.getElementById('admin-books');
+    AppState.adminFilters = AppState.adminFilters || {};
+    
     let html = `
       <div class="admin-panel-header">
         <h3>Manage Books</h3>
+      </div>
+      <div class="admin-filters" style="margin-bottom: 20px; background: #f7f7f7; padding: 16px; border-radius: var(--radius-cards);">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div>
+            <label style="font-weight: 700; margin-bottom: 8px; display: block;">Select School</label>
+            <select onchange="Admin.onAdminFilterChange('booksSchool', this.value)" style="width: 100%; padding: 8px; border-radius: var(--radius-inputs);">
+              <option value="">-- Choose a School --</option>
+              ${AppState.adminData.schools.filter(s => s.status !== 0).map(s => `<option value="${s.index}" ${AppState.adminFilters.booksSchool == s.index ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label style="font-weight: 700; margin-bottom: 8px; display: block;">Select Class</label>
+            <select onchange="Admin.onAdminFilterChange('booksClass', this.value)" style="width: 100%; padding: 8px; border-radius: var(--radius-inputs);" ${!AppState.adminFilters.booksSchool ? 'disabled' : ''}>
+              <option value="">-- Choose a Class --</option>
+              ${AppState.adminData.classes.filter(c => c.status !== 0 && c.schoolIndex == AppState.adminFilters.booksSchool).map(c => `<option value="${c.index}" ${AppState.adminFilters.booksClass == c.index ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom: 16px; display: flex; justify-content: flex-end;">
         <button class="btn btn-primary btn-sm" onclick="Admin.showAddBookModal()">➕ Add Book</button>
       </div>
       <div class="admin-list">
     `;
 
-    if (AppState.adminData.books.length === 0) {
+    if (!AppState.adminFilters.booksClass) {
       html += `
         <div class="empty-state" style="padding: 40px;">
-          <div class="empty-state-icon">📕</div>
-          <div class="empty-state-title">No Books</div>
-          <div class="empty-state-desc">Click "Add Book" to create one.</div>
+          <div class="empty-state-title">Select School and Class</div>
+          <div class="empty-state-desc">Please choose a school and class above to view books.</div>
         </div>
       `;
     } else {
-      AppState.adminData.books.forEach((book) => {
-        const isDisabled = book.status === 0;
+      const filteredBooks = AppState.adminData.books.filter(b => Number(b.classIndex) === Number(AppState.adminFilters.booksClass));
+      
+      if (filteredBooks.length === 0) {
         html += `
-          <div class="admin-list-item ${isDisabled ? 'disabled' : ''}">
-            <div class="admin-list-info">
-              <span class="admin-list-name">[${escapeHtml(book.identity || '')}] ${escapeHtml(book.name)}</span>
-              <span class="admin-list-meta">Class: ${escapeHtml(book.className || '')} | MRP: ${formatCurrency(book.mrp)} | Sell: ${formatCurrency(book.sellingPrice)} | Status: ${isDisabled ? 'Disabled' : 'Active'}</span>
-            </div>
-            <div class="admin-list-actions">
-              <button class="btn btn-info btn-sm" onclick="Admin.showEditBookModal(${JSON.stringify(book).replace(/"/g, '&quot;')})">✏️ Edit</button>
-              <button class="btn ${isDisabled ? 'btn-success' : 'btn-warning'} btn-sm" onclick="Admin.toggleBook(${book.index}, ${isDisabled ? 1 : 0})">
-                ${isDisabled ? '✅ Enable' : '⏸️ Disable'}
-              </button>
-            </div>
+          <div class="empty-state" style="padding: 40px;">
+            <div class="empty-state-icon">📕</div>
+            <div class="empty-state-title">No Books</div>
+            <div class="empty-state-desc">Click "Add Book" to create one for this class.</div>
           </div>
         `;
-      });
+      } else {
+        filteredBooks.forEach((book) => {
+          const isDisabled = book.status === 0;
+          html += `
+            <div class="admin-list-item ${isDisabled ? 'disabled' : ''}">
+              <div class="admin-list-info">
+                <span class="admin-list-name">[${escapeHtml(book.identity || '')}] ${escapeHtml(book.name)}</span>
+                <span class="admin-list-meta">MRP: ${formatCurrency(book.mrp)} | Sell: ${formatCurrency(book.sellingPrice)} | Status: ${isDisabled ? 'Disabled' : 'Active'}</span>
+              </div>
+              <div class="admin-list-actions">
+                <button class="btn btn-info btn-sm" onclick="Admin.showEditBookModal(${JSON.stringify(book).replace(/"/g, '&quot;')})">✏️ Edit</button>
+                <button class="btn ${isDisabled ? 'btn-success' : 'btn-warning'} btn-sm" onclick="Admin.toggleBook(${book.index}, ${isDisabled ? 1 : 0})">
+                  ${isDisabled ? '✅ Enable' : '⏸️ Disable'}
+                </button>
+              </div>
+            </div>
+          `;
+        });
+      }
     }
 
     html += '</div>';
@@ -1606,19 +1678,21 @@ const Admin = {
   },
 
   showAddBookModal() {
-    const classOptions = AppState.adminData.classes
-      .filter((c) => c.status !== 0)
-      .map((c) => ({ value: c.index, label: `${c.schoolName || ''} — ${c.name}` }));
+    AppState.adminFilters = AppState.adminFilters || {};
+    if (!AppState.adminFilters.booksClass) {
+      showToast('Please select a class first', 'error');
+      return;
+    }
+    const cls = AppState.adminData.classes.find(c => Number(c.index) === Number(AppState.adminFilters.booksClass));
 
-    Modal.setupAdminModal('Add Book', [
-      { id: 'book-class', label: 'Class', type: 'select', options: classOptions, value: '' },
+    Modal.setupAdminModal(`Add Book (to ${cls.name})`, [
       { id: 'book-identity', label: 'Identity Code', type: 'text', placeholder: 'e.g., ENG1', value: '' },
       { id: 'book-name', label: 'Book Name', type: 'text', placeholder: 'Enter book name', value: '' },
       { id: 'book-mrp', label: 'MRP', type: 'number', placeholder: '0.00', value: '' },
       { id: 'book-selling-price', label: 'Selling Price', type: 'number', placeholder: '0.00', value: '' },
     ], (data) => {
       this.saveBook({
-        classIndex: data['book-class'],
+        classIndex: AppState.adminFilters.booksClass,
         identity: data['book-identity'],
         name: data['book-name'],
         mrp: parseFloat(data['book-mrp']) || 0,
@@ -1629,19 +1703,14 @@ const Admin = {
   },
 
   showEditBookModal(book) {
-    const classOptions = AppState.adminData.classes
-      .filter((c) => c.status !== 0)
-      .map((c) => ({ value: c.index, label: `${c.schoolName || ''} — ${c.name}` }));
-
     Modal.setupAdminModal('Edit Book', [
-      { id: 'book-class', label: 'Class', type: 'select', options: classOptions, value: book.classIndex || '' },
       { id: 'book-identity', label: 'Identity Code', type: 'text', placeholder: 'e.g., ENG1', value: book.identity || '' },
       { id: 'book-name', label: 'Book Name', type: 'text', placeholder: 'Enter book name', value: book.name || '' },
       { id: 'book-mrp', label: 'MRP', type: 'number', placeholder: '0.00', value: book.mrp || '' },
       { id: 'book-selling-price', label: 'Selling Price', type: 'number', placeholder: '0.00', value: book.sellingPrice || '' },
     ], (data) => {
       this.saveBook({
-        classIndex: data['book-class'],
+        classIndex: book.classIndex,
         identity: data['book-identity'],
         name: data['book-name'],
         mrp: parseFloat(data['book-mrp']) || 0,
@@ -1707,40 +1776,73 @@ const Admin = {
 
   renderNotebooks() {
     const panel = document.getElementById('admin-notebooks');
+    AppState.adminFilters = AppState.adminFilters || {};
+    
     let html = `
       <div class="admin-panel-header">
         <h3>Manage Notebooks</h3>
+      </div>
+      <div class="admin-filters" style="margin-bottom: 20px; background: #f7f7f7; padding: 16px; border-radius: var(--radius-cards);">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div>
+            <label style="font-weight: 700; margin-bottom: 8px; display: block;">Select School</label>
+            <select onchange="Admin.onAdminFilterChange('notebooksSchool', this.value)" style="width: 100%; padding: 8px; border-radius: var(--radius-inputs);">
+              <option value="">-- Choose a School --</option>
+              ${AppState.adminData.schools.filter(s => s.status !== 0).map(s => `<option value="${s.index}" ${AppState.adminFilters.notebooksSchool == s.index ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label style="font-weight: 700; margin-bottom: 8px; display: block;">Select Class</label>
+            <select onchange="Admin.onAdminFilterChange('notebooksClass', this.value)" style="width: 100%; padding: 8px; border-radius: var(--radius-inputs);" ${!AppState.adminFilters.notebooksSchool ? 'disabled' : ''}>
+              <option value="">-- Choose a Class --</option>
+              ${AppState.adminData.classes.filter(c => c.status !== 0 && c.schoolIndex == AppState.adminFilters.notebooksSchool).map(c => `<option value="${c.index}" ${AppState.adminFilters.notebooksClass == c.index ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom: 16px; display: flex; justify-content: flex-end;">
         <button class="btn btn-primary btn-sm" onclick="Admin.showAddNotebookModal()">➕ Add Notebook</button>
       </div>
       <div class="admin-list">
     `;
 
-    if (AppState.adminData.notebooks.length === 0) {
+    if (!AppState.adminFilters.notebooksClass) {
       html += `
         <div class="empty-state" style="padding: 40px;">
-          <div class="empty-state-icon">📓</div>
-          <div class="empty-state-title">No Notebooks</div>
-          <div class="empty-state-desc">Click "Add Notebook" to create one.</div>
+          <div class="empty-state-title">Select School and Class</div>
+          <div class="empty-state-desc">Please choose a school and class above to view notebooks.</div>
         </div>
       `;
     } else {
-      AppState.adminData.notebooks.forEach((nb) => {
-        const isDisabled = nb.status === 0;
+      const filteredNotebooks = AppState.adminData.notebooks.filter(nb => Number(nb.classIndex) === Number(AppState.adminFilters.notebooksClass));
+
+      if (filteredNotebooks.length === 0) {
         html += `
-          <div class="admin-list-item ${isDisabled ? 'disabled' : ''}">
-            <div class="admin-list-info">
-              <span class="admin-list-name">[${escapeHtml(nb.identity || '')}] ${escapeHtml(nb.name)}</span>
-              <span class="admin-list-meta">Class: ${escapeHtml(nb.className || '')} | MRP: ${formatCurrency(nb.mrp)} | Sell: ${formatCurrency(nb.sellingPrice)} | Status: ${isDisabled ? 'Disabled' : 'Active'}</span>
-            </div>
-            <div class="admin-list-actions">
-              <button class="btn btn-info btn-sm" onclick="Admin.showEditNotebookModal(${JSON.stringify(nb).replace(/"/g, '&quot;')})">✏️ Edit</button>
-              <button class="btn ${isDisabled ? 'btn-success' : 'btn-warning'} btn-sm" onclick="Admin.toggleNotebook(${nb.index}, ${isDisabled ? 1 : 0})">
-                ${isDisabled ? '✅ Enable' : '⏸️ Disable'}
-              </button>
-            </div>
+          <div class="empty-state" style="padding: 40px;">
+            <div class="empty-state-icon">📓</div>
+            <div class="empty-state-title">No Notebooks</div>
+            <div class="empty-state-desc">Click "Add Notebook" to create one for this class.</div>
           </div>
         `;
-      });
+      } else {
+        filteredNotebooks.forEach((nb) => {
+          const isDisabled = nb.status === 0;
+          html += `
+            <div class="admin-list-item ${isDisabled ? 'disabled' : ''}">
+              <div class="admin-list-info">
+                <span class="admin-list-name">[${escapeHtml(nb.identity || '')}] ${escapeHtml(nb.name)}</span>
+                <span class="admin-list-meta">MRP: ${formatCurrency(nb.mrp)} | Sell: ${formatCurrency(nb.sellingPrice)} | Status: ${isDisabled ? 'Disabled' : 'Active'}</span>
+              </div>
+              <div class="admin-list-actions">
+                <button class="btn btn-info btn-sm" onclick="Admin.showEditNotebookModal(${JSON.stringify(nb).replace(/"/g, '&quot;')})">✏️ Edit</button>
+                <button class="btn ${isDisabled ? 'btn-success' : 'btn-warning'} btn-sm" onclick="Admin.toggleNotebook(${nb.index}, ${isDisabled ? 1 : 0})">
+                  ${isDisabled ? '✅ Enable' : '⏸️ Disable'}
+                </button>
+              </div>
+            </div>
+          `;
+        });
+      }
     }
 
     html += '</div>';
@@ -1748,19 +1850,21 @@ const Admin = {
   },
 
   showAddNotebookModal() {
-    const classOptions = AppState.adminData.classes
-      .filter((c) => c.status !== 0)
-      .map((c) => ({ value: c.index, label: `${c.schoolName || ''} — ${c.name}` }));
+    AppState.adminFilters = AppState.adminFilters || {};
+    if (!AppState.adminFilters.notebooksClass) {
+      showToast('Please select a class first', 'error');
+      return;
+    }
+    const cls = AppState.adminData.classes.find(c => Number(c.index) === Number(AppState.adminFilters.notebooksClass));
 
-    Modal.setupAdminModal('Add Notebook', [
-      { id: 'nb-class', label: 'Class', type: 'select', options: classOptions, value: '' },
+    Modal.setupAdminModal(`Add Notebook (to ${cls.name})`, [
       { id: 'nb-identity', label: 'Identity Code', type: 'text', placeholder: 'e.g., NB1', value: '' },
       { id: 'nb-name', label: 'Notebook Name', type: 'text', placeholder: 'Enter notebook name', value: '' },
       { id: 'nb-mrp', label: 'MRP', type: 'number', placeholder: '0.00', value: '' },
       { id: 'nb-selling-price', label: 'Selling Price', type: 'number', placeholder: '0.00', value: '' },
     ], (data) => {
       this.saveNotebook({
-        classIndex: data['nb-class'],
+        classIndex: AppState.adminFilters.notebooksClass,
         identity: data['nb-identity'],
         name: data['nb-name'],
         mrp: parseFloat(data['nb-mrp']) || 0,
@@ -1771,19 +1875,14 @@ const Admin = {
   },
 
   showEditNotebookModal(nb) {
-    const classOptions = AppState.adminData.classes
-      .filter((c) => c.status !== 0)
-      .map((c) => ({ value: c.index, label: `${c.schoolName || ''} — ${c.name}` }));
-
     Modal.setupAdminModal('Edit Notebook', [
-      { id: 'nb-class', label: 'Class', type: 'select', options: classOptions, value: nb.classIndex || '' },
       { id: 'nb-identity', label: 'Identity Code', type: 'text', placeholder: 'e.g., NB1', value: nb.identity || '' },
       { id: 'nb-name', label: 'Notebook Name', type: 'text', placeholder: 'Enter notebook name', value: nb.name || '' },
       { id: 'nb-mrp', label: 'MRP', type: 'number', placeholder: '0.00', value: nb.mrp || '' },
       { id: 'nb-selling-price', label: 'Selling Price', type: 'number', placeholder: '0.00', value: nb.sellingPrice || '' },
     ], (data) => {
       this.saveNotebook({
-        classIndex: data['nb-class'],
+        classIndex: nb.classIndex,
         identity: data['nb-identity'],
         name: data['nb-name'],
         mrp: parseFloat(data['nb-mrp']) || 0,
@@ -1955,6 +2054,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- Checkout Modal ---
+  const mobileInput = document.getElementById('checkout-mobile');
+  if (mobileInput) {
+    mobileInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '');
+    });
+  }
+
   document.getElementById('btn-cancel-checkout').addEventListener('click', () => {
     Modal.hide('modal-checkout');
   });
