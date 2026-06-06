@@ -18,7 +18,7 @@ const AppState = {
   selectedClass: null,
   // Invoice state
   invoice: {
-    students: [], // Each: { schoolName, className, classIndex, items: [] }
+    students: [], // Each: { schoolName, className, classIndex, catalog: { books, notebooks, others } }
     activeStudentIndex: 0,
   },
   // Entries state
@@ -347,9 +347,11 @@ const Home = {
       .map(
         (school, index) => `
         <div class="card" onclick="Home.selectSchool(${school.index}, '${escapeHtml(school.name)}')" data-school-index="${school.index}">
-          <span class="card-icon">🏫</span>
-          <div class="card-title">${escapeHtml(school.name)}</div>
-          <div class="card-subtitle">Tap to view classes</div>
+          <div class="card-content-custom">
+            <span class="card-emoji">🏫</span>
+            <span class="card-divider-custom"></span>
+            <span class="card-text-custom">${escapeHtml(school.name)}</span>
+          </div>
         </div>
       `
       )
@@ -397,9 +399,11 @@ const Home = {
       .map(
         (cls) => `
         <div class="card" onclick="Home.selectClass(${cls.index}, '${escapeHtml(cls.name)}')" data-class-index="${cls.index}">
-          <span class="card-icon">📖</span>
-          <div class="card-title">${escapeHtml(cls.name)}</div>
-          <div class="card-subtitle">${escapeHtml(AppState.selectedSchool.name)}</div>
+          <div class="card-content-custom">
+            <span class="card-emoji">📚</span>
+            <span class="card-divider-custom"></span>
+            <span class="card-text-custom">${escapeHtml(cls.name)}</span>
+          </div>
         </div>
       `
       )
@@ -453,8 +457,7 @@ const Invoice = {
         schoolName,
         className,
         classIndex,
-        catalog: catalog,
-        items: [], // Cart starts empty
+        catalog: catalog, // { books, notebooks, others }
       });
     }
 
@@ -472,7 +475,7 @@ const Invoice = {
     const books = [];
     const notebooks = [];
 
-    // Process books
+    // Process books — each item gets quantity:0 (user selects via +/-)
     if (booksRes && booksRes.success && Array.isArray(booksRes.data)) {
       booksRes.data.forEach((book) => {
         if (Number(book.status) !== 0) {
@@ -483,6 +486,7 @@ const Invoice = {
             mrp: parseFloat(book.mrp) || 0,
             sellingPrice: parseFloat(book.sellingPrice) || 0,
             message: '',
+            quantity: 0,
             status: 1, // 1 = pending
             originalIndex: book.bookIndex,
           });
@@ -490,7 +494,7 @@ const Invoice = {
       });
     }
 
-    // Process notebooks
+    // Process notebooks — each item gets quantity:0
     if (notebooksRes && notebooksRes.success && Array.isArray(notebooksRes.data)) {
       notebooksRes.data.forEach((nb) => {
         if (Number(nb.status) !== 0) {
@@ -501,6 +505,7 @@ const Invoice = {
             mrp: parseFloat(nb.mrp) || 0,
             sellingPrice: parseFloat(nb.sellingPrice) || 0,
             message: '',
+            quantity: 0,
             status: 1,
             originalIndex: nb.notebookIndex,
           });
@@ -508,7 +513,31 @@ const Invoice = {
       });
     }
 
-    return { books, notebooks };
+    return { books, notebooks, others: [] };
+  },
+
+  // Helper: collect all catalog items with quantity > 0 from a student
+  getSelectedItems(student) {
+    const selected = [];
+    ['books', 'notebooks', 'others'].forEach((catType) => {
+      const arr = student.catalog[catType] || [];
+      arr.forEach((item) => {
+        if (item.quantity > 0) selected.push(item);
+      });
+    });
+    return selected;
+  },
+
+  // Helper: count total selected items across a student's catalog
+  getSelectedCount(student) {
+    let count = 0;
+    ['books', 'notebooks', 'others'].forEach((catType) => {
+      const arr = student.catalog[catType] || [];
+      arr.forEach((item) => {
+        if (item.quantity > 0) count += item.quantity;
+      });
+    });
+    return count;
   },
 
   renderStudentTabs() {
@@ -521,7 +550,6 @@ const Invoice = {
         <div class="student-tab ${index === AppState.invoice.activeStudentIndex ? 'active' : ''}"
              onclick="Invoice.switchStudent(${index})">
           <span>Student ${index + 1}</span>
-          <span class="student-tab-school">${escapeHtml(student.className)}</span>
           ${
             students.length > 1
               ? `<button class="remove-student" onclick="event.stopPropagation(); Invoice.removeStudent(${index})">×</button>`
@@ -558,65 +586,77 @@ const Invoice = {
 
     // Student info header
     html += `
-      <div style="margin-bottom: 8px; padding: 10px 14px; background: #f7f7f7; border: 1px solid var(--color-cloud-gray); border-radius: 16px;">
+      <div style="margin-bottom: 16px; padding: 10px 14px; background: #f7f7f7; border: 1px solid var(--color-cloud-gray); border-radius: 16px;">
         <span style="font-size: 0.85rem; color: var(--color-graphite);">${escapeHtml(student.schoolName)} → ${escapeHtml(student.className)}</span>
       </div>
     `;
 
-    // Cart Section (Selected Items)
-    html += `
-      <div class="section-header" style="margin-top: 24px;">
-        <h3>🛒 Selected Items <span class="section-count">${student.items.length}</span></h3>
-      </div>
-    `;
-    if (student.items.length > 0) {
-      html += student.items
-        .map((item, itemIndex) => {
-          if (item.type === 'other') return this.renderOtherCartCard(item, studentIndex, itemIndex);
-          return this.renderCartCard(item, studentIndex, itemIndex);
-        })
-        .join('');
-    } else {
-      html += `<div class="empty-state" style="padding: 24px;"><div class="empty-state-desc">No items selected yet. Add items from the catalog below.</div></div>`;
-    }
+    // Column container for Books and Notebooks
+    html += `<div class="student-catalog-columns">`;
 
-    // Available Catalog
-    html += `<hr style="margin: 32px 0; border: 1px solid var(--color-cloud-gray);">`;
-    html += `<h2 style="font-size: 1.2rem; color: var(--color-graphite); margin-bottom: 16px;">Available Catalog</h2>`;
-
-    // Books
+    // Books Column
     const books = student.catalog.books || [];
+    const booksSelected = books.filter(b => b.quantity > 0).reduce((sum, b) => sum + b.quantity, 0);
     html += `
-      <div class="section-header mt-2">
-        <h3>📕 Books <span class="section-count">${books.length}</span></h3>
-      </div>
+      <div class="catalog-column column-books">
+        <div class="section-header">
+          <h3>📕 Books <span class="section-count">${books.length}</span>${booksSelected > 0 ? ` <span class="section-selected-badge">${booksSelected} selected</span>` : ''}</h3>
+        </div>
+        <div class="catalog-list">
     `;
     if (books.length > 0) {
       html += books.map((item, catIndex) => this.renderCatalogCard(item, studentIndex, 'books', catIndex)).join('');
     } else {
       html += `<div class="empty-state" style="padding: 24px;"><div class="empty-state-desc">No books available for this class.</div></div>`;
     }
-
-    // Notebooks
-    const notebooks = student.catalog.notebooks || [];
     html += `
-      <div class="section-header mt-2" style="margin-top: 24px;">
-        <h3>📓 Notebooks <span class="section-count">${notebooks.length}</span></h3>
+        </div>
       </div>
+    `;
+
+    // Notebooks Column
+    const notebooks = student.catalog.notebooks || [];
+    const notebooksSelected = notebooks.filter(n => n.quantity > 0).reduce((sum, n) => sum + n.quantity, 0);
+    html += `
+      <div class="catalog-column column-notebooks">
+        <div class="section-header">
+          <h3>📓 Notebooks <span class="section-count">${notebooks.length}</span>${notebooksSelected > 0 ? ` <span class="section-selected-badge">${notebooksSelected} selected</span>` : ''}</h3>
+        </div>
+        <div class="catalog-list">
     `;
     if (notebooks.length > 0) {
       html += notebooks.map((item, catIndex) => this.renderCatalogCard(item, studentIndex, 'notebooks', catIndex)).join('');
     } else {
       html += `<div class="empty-state" style="padding: 24px;"><div class="empty-state-desc">No notebooks available for this class.</div></div>`;
     }
-
     html += `
-      <div class="section-header mt-3" style="margin-top: 24px;">
-        <h3>📦 Custom Item</h3>
+        </div>
       </div>
-      <button class="add-other-item btn btn-secondary btn-full" onclick="Invoice.addOtherItem(${studentIndex})">
-        ➕ Add Custom Item
-      </button>
+    `;
+
+    // Close columns container
+    html += `</div>`;
+
+    // Custom Items section (Full Width)
+    const others = student.catalog.others || [];
+    const othersSelected = others.filter(o => o.quantity > 0).reduce((sum, o) => sum + o.quantity, 0);
+    html += `
+      <div class="catalog-full-width column-others">
+        <div class="section-header">
+          <h3>📦 Custom Items${others.length > 0 ? ` <span class="section-count">${others.length}</span>` : ''}${othersSelected > 0 ? ` <span class="section-selected-badge">${othersSelected} selected</span>` : ''}</h3>
+        </div>
+        <div class="catalog-list" style="margin-bottom: 16px;">
+    `;
+    // Render existing custom items
+    if (others.length > 0) {
+      html += others.map((item, catIndex) => this.renderOtherCard(item, studentIndex, catIndex)).join('');
+    }
+    html += `
+        </div>
+        <button class="add-other-item btn btn-secondary btn-full" onclick="Invoice.addOtherItem(${studentIndex})">
+          ➕ Add Custom Item
+        </button>
+      </div>
     `;
 
     html += `</div>`;
@@ -625,94 +665,99 @@ const Invoice = {
 
   renderCatalogCard(item, studentIndex, catType, catIndex) {
     const identityClass = item.type === 'notebook' ? 'notebook' : '';
+    const isSelected = item.quantity > 0;
+    const selectedClass = isSelected ? 'item-card-selected' : '';
     return `
-      <div class="item-card">
+      <div class="item-card ${selectedClass}">
         <div class="item-identity ${identityClass}">${escapeHtml(item.identity || item.type.charAt(0).toUpperCase())}</div>
-        <div class="item-info">
-          <div class="item-name">${escapeHtml(item.name)}</div>
+        <div class="item-main-info">
+          <div class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
+        </div>
+        <div class="item-price-and-inputs-row">
           <div class="item-prices">
-            <span class="item-mrp">MRP: <span>${formatCurrency(item.mrp)}</span></span>
-            <span class="item-selling-price" style="margin-left: 12px; color: var(--color-ocean-blue); font-weight: 700;">${formatCurrency(item.sellingPrice)}</span>
+            <span class="item-mrp">MRP: ${formatCurrency(item.mrp)}</span>
+            <span class="item-selling-price-label">Sell: ${formatCurrency(item.sellingPrice)}</span>
           </div>
+          ${isSelected ? `
+            <div class="item-inputs-row">
+              <div class="item-input-group price-input">
+                <label>Price</label>
+                <input type="number" value="${item.sellingPrice}" 
+                       step="0.01" min="0"
+                       onchange="Invoice.updateCatalogPrice(${studentIndex}, '${catType}', ${catIndex}, this.value)">
+              </div>
+              <div class="item-input-group note-input">
+                <label>Note</label>
+                <input type="text" placeholder="Add note..."
+                       value="${escapeHtml(item.message)}"
+                       onchange="Invoice.updateCatalogMessage(${studentIndex}, '${catType}', ${catIndex}, this.value)">
+              </div>
+            </div>
+          ` : ''}
         </div>
         <div class="item-controls">
-          <button class="btn btn-info btn-sm" onclick="Invoice.addCatalogItem(${studentIndex}, '${catType}', ${catIndex})">➕ Add</button>
+          <div class="quantity-control">
+            <button class="quantity-btn" onclick="Invoice.updateQuantity(${studentIndex}, '${catType}', ${catIndex}, -1)">−</button>
+            <span class="quantity-value">${item.quantity}</span>
+            <button class="quantity-btn" onclick="Invoice.updateQuantity(${studentIndex}, '${catType}', ${catIndex}, 1)">+</button>
+          </div>
         </div>
       </div>
     `;
   },
 
-  renderCartCard(item, studentIndex, itemIndex) {
-    const identityClass = item.type === 'notebook' ? 'notebook' : '';
+  renderOtherCard(item, studentIndex, catIndex) {
+    const isSelected = item.quantity > 0;
+    const selectedClass = isSelected ? 'item-card-selected' : '';
     return `
-      <div class="item-card" style="border: 2px solid var(--color-sky-blue); margin-bottom: 12px; border-radius: var(--radius-card); background: #f1f9ff;">
-        <div class="item-identity ${identityClass}">${escapeHtml(item.identity || item.type.charAt(0).toUpperCase())}</div>
-        <div class="item-info">
-          <div class="item-name" style="font-weight: 700;">${escapeHtml(item.name)}</div>
-          <div class="item-prices" style="margin-top: 4px;">
-            <span class="item-selling-price" style="color: var(--color-ocean-blue); font-weight: 700;">
-              Sell: <input type="number" value="${item.sellingPrice}" 
-                     step="0.01" min="0" style="width:70px; padding:4px; font-weight: 700; border: 2px solid var(--color-cloud-gray); border-radius: 8px; margin-left: 4px;"
-                     onchange="Invoice.updatePrice(${studentIndex}, ${itemIndex}, this.value)">
-            </span>
-          </div>
-          <div class="item-message" style="margin-top: 8px;">
-            <input type="text" placeholder="Add note..."
-                   value="${escapeHtml(item.message)}"
-                   onchange="Invoice.updateMessage(${studentIndex}, ${itemIndex}, this.value)" style="width: 100%; border: 2px solid var(--color-cloud-gray); border-radius: 8px; padding: 6px;">
-          </div>
-        </div>
-        <div class="item-controls">
-          <button class="btn btn-danger btn-sm" onclick="Invoice.removeCartItem(${studentIndex}, ${itemIndex})">×</button>
-        </div>
-      </div>
-    `;
-  },
-
-  renderOtherCartCard(item, studentIndex, itemIndex) {
-    return `
-      <div class="item-card" style="border: 2px solid var(--color-ocean-blue); margin-bottom: 12px; border-radius: var(--radius-card); background: #f1f9ff;">
+      <div class="item-card ${selectedClass}">
         <div class="item-identity other">🔧</div>
-        <div class="item-info">
-            <input type="text" placeholder="Item name" value="${escapeHtml(item.name)}"
-                   onchange="Invoice.updateOtherName(${studentIndex}, ${itemIndex}, this.value)" style="width: 100%; margin-bottom:8px; border: 2px solid var(--color-cloud-gray); border-radius: 8px; padding: 6px; font-weight: 700;">
+        <div class="item-main-info">
+          <input type="text" placeholder="Item name" value="${escapeHtml(item.name)}"
+                 onchange="Invoice.updateCatalogOtherName(${studentIndex}, ${catIndex}, this.value)"
+                 class="item-name-input">
+        </div>
+        <div class="item-price-and-inputs-row">
+          ${isSelected ? `
+            <div class="item-inputs-row">
+              <div class="item-input-group price-input">
+                <label>Price</label>
+                <input type="number" placeholder="Price" value="${item.sellingPrice}" step="0.01" min="0"
+                       onchange="Invoice.updateCatalogPrice(${studentIndex}, 'others', ${catIndex}, this.value)">
+              </div>
+              <div class="item-input-group note-input">
+                <label>Note</label>
+                <input type="text" placeholder="Add note..." value="${escapeHtml(item.message)}"
+                       onchange="Invoice.updateCatalogMessage(${studentIndex}, 'others', ${catIndex}, this.value)">
+              </div>
+            </div>
+          ` : `
             <div class="item-prices">
-                <span class="item-selling-price" style="color: var(--color-ocean-blue); font-weight: 700;">
-                  Sell: <input type="number" placeholder="Price" value="${item.sellingPrice}" step="0.01" min="0" style="width:70px; padding:4px; font-weight: 700; border: 2px solid var(--color-cloud-gray); border-radius: 8px; margin-left: 4px;"
-                         onchange="Invoice.updatePrice(${studentIndex}, ${itemIndex}, this.value)">
-                </span>
+              <span class="item-selling-price-label">Sell: ${formatCurrency(item.sellingPrice)}</span>
             </div>
-            <div class="item-message" style="margin-top: 8px;">
-              <input type="text" placeholder="Add note..."
-                     value="${escapeHtml(item.message)}"
-                     onchange="Invoice.updateMessage(${studentIndex}, ${itemIndex}, this.value)" style="width: 100%; border: 2px solid var(--color-cloud-gray); border-radius: 8px; padding: 6px;">
-            </div>
+          `}
         </div>
         <div class="item-controls">
-          <button class="btn btn-danger btn-sm" onclick="Invoice.removeCartItem(${studentIndex}, ${itemIndex})">×</button>
+          <div class="quantity-control">
+            <button class="quantity-btn" onclick="Invoice.updateQuantity(${studentIndex}, 'others', ${catIndex}, -1)">−</button>
+            <span class="quantity-value">${item.quantity}</span>
+            <button class="quantity-btn" onclick="Invoice.updateQuantity(${studentIndex}, 'others', ${catIndex}, 1)">+</button>
+          </div>
+          <button class="remove-other-btn" onclick="Invoice.removeOtherItem(${studentIndex}, ${catIndex})" title="Remove item">×</button>
         </div>
       </div>
     `;
   },
 
-  addCatalogItem(studentIndex, catType, catIndex) {
+  updateQuantity(studentIndex, catType, catIndex, delta) {
     const student = AppState.invoice.students[studentIndex];
     if (!student || !student.catalog[catType]) return;
-    
-    const templateItem = student.catalog[catType][catIndex];
-    if (!templateItem) return;
 
-    student.items.push({ ...templateItem, quantity: 1 });
+    const item = student.catalog[catType][catIndex];
+    if (!item) return;
 
-    this.renderStudentContent(studentIndex);
-    this.updateInvoiceSummary();
-  },
+    item.quantity = Math.max(0, item.quantity + delta);
 
-  removeCartItem(studentIndex, itemIndex) {
-    const student = AppState.invoice.students[studentIndex];
-    if (!student) return;
-    
-    student.items.splice(itemIndex, 1);
     this.renderStudentContent(studentIndex);
     this.updateInvoiceSummary();
   },
@@ -721,7 +766,9 @@ const Invoice = {
     const student = AppState.invoice.students[studentIndex];
     if (!student) return;
 
-    student.items.push({
+    if (!student.catalog.others) student.catalog.others = [];
+
+    student.catalog.others.push({
       type: 'other',
       identity: 'OTH',
       name: '',
@@ -736,23 +783,32 @@ const Invoice = {
     this.updateInvoiceSummary();
   },
 
-  updateOtherName(studentIndex, itemIndex, newName) {
+  removeOtherItem(studentIndex, catIndex) {
     const student = AppState.invoice.students[studentIndex];
-    if (!student || !student.items[itemIndex]) return;
-    student.items[itemIndex].name = newName;
-  },
+    if (!student || !student.catalog.others) return;
 
-  updatePrice(studentIndex, itemIndex, newPrice) {
-    const student = AppState.invoice.students[studentIndex];
-    if (!student || !student.items[itemIndex]) return;
-    student.items[itemIndex].sellingPrice = parseFloat(newPrice) || 0;
+    student.catalog.others.splice(catIndex, 1);
+    this.renderStudentContent(studentIndex);
     this.updateInvoiceSummary();
   },
 
-  updateMessage(studentIndex, itemIndex, message) {
+  updateCatalogOtherName(studentIndex, catIndex, newName) {
     const student = AppState.invoice.students[studentIndex];
-    if (!student || !student.items[itemIndex]) return;
-    student.items[itemIndex].message = message;
+    if (!student || !student.catalog.others || !student.catalog.others[catIndex]) return;
+    student.catalog.others[catIndex].name = newName;
+  },
+
+  updateCatalogPrice(studentIndex, catType, catIndex, newPrice) {
+    const student = AppState.invoice.students[studentIndex];
+    if (!student || !student.catalog[catType] || !student.catalog[catType][catIndex]) return;
+    student.catalog[catType][catIndex].sellingPrice = parseFloat(newPrice) || 0;
+    this.updateInvoiceSummary();
+  },
+
+  updateCatalogMessage(studentIndex, catType, catIndex, message) {
+    const student = AppState.invoice.students[studentIndex];
+    if (!student || !student.catalog[catType] || !student.catalog[catType][catIndex]) return;
+    student.catalog[catType][catIndex].message = message;
   },
 
   updateInvoiceSummary() {
@@ -763,11 +819,10 @@ const Invoice = {
     let totalAmount = 0;
 
     AppState.invoice.students.forEach((student) => {
-      student.items.forEach((item) => {
-        if (item.quantity > 0) {
-          totalItems += item.quantity;
-          totalAmount += item.quantity * item.sellingPrice;
-        }
+      const selected = this.getSelectedItems(student);
+      selected.forEach((item) => {
+        totalItems += item.quantity;
+        totalAmount += item.quantity * item.sellingPrice;
       });
     });
 
@@ -858,7 +913,6 @@ const Invoice = {
         className,
         classIndex: parseInt(classIndex),
         catalog: catalog,
-        items: [],
       });
 
       const newIndex = AppState.invoice.students.length - 1;
@@ -892,12 +946,10 @@ const Invoice = {
   },
 
   showCheckoutModal() {
-    // Validate — at least one item with quantity > 0
+    // Validate — at least one item with quantity > 0 across all catalog types
     let hasItems = false;
     AppState.invoice.students.forEach((student) => {
-      student.items.forEach((item) => {
-        if (item.quantity > 0) hasItems = true;
-      });
+      if (this.getSelectedItems(student).length > 0) hasItems = true;
     });
 
     if (!hasItems) {
@@ -912,7 +964,7 @@ const Invoice = {
 
     AppState.invoice.students.forEach((student, sIndex) => {
       let studentTotal = 0;
-      const selectedItems = student.items.filter((item) => item.quantity > 0);
+      const selectedItems = this.getSelectedItems(student);
 
       if (selectedItems.length === 0) return;
 
@@ -968,23 +1020,33 @@ const Invoice = {
     const dateStr = now.toLocaleDateString('en-IN');
     const timeStr = now.toLocaleTimeString('en-IN');
 
-    // Build students data — only include items with quantity > 0
-    const studentsData = AppState.invoice.students.map((student) => ({
-      schoolName: student.schoolName,
-      className: student.className,
-      items: student.items
-        .filter((item) => item.quantity > 0)
-        .map((item) => ({
-          type: item.type,
-          identity: item.identity,
-          name: item.name,
-          mrp: item.mrp,
-          sellingPrice: item.sellingPrice,
-          quantity: item.quantity,
-          message: item.message,
-          status: item.status,
-        })),
-    }));
+    // Build students data — expand items with quantity>1 into N separate entries for backend
+    const studentsData = AppState.invoice.students.map((student) => {
+      const expandedItems = [];
+      const selectedItems = this.getSelectedItems(student);
+
+      selectedItems.forEach((item) => {
+        // Expand: quantity N → N separate entries, each with quantity: 1
+        for (let i = 0; i < item.quantity; i++) {
+          expandedItems.push({
+            type: item.type,
+            identity: item.identity,
+            name: item.name,
+            mrp: item.mrp,
+            sellingPrice: item.sellingPrice,
+            quantity: 1,
+            message: item.message,
+            status: item.status,
+          });
+        }
+      });
+
+      return {
+        schoolName: student.schoolName,
+        className: student.className,
+        items: expandedItems,
+      };
+    });
 
     // Match code.gs createInvoice expected fields
     const result = await API.post('createInvoice', {
@@ -1179,14 +1241,14 @@ const Entries = {
     const dateStr = formatUserFriendlyDateTime(entry.date, entry.time);
 
     let html = `
-      <div style="margin-bottom: 24px; padding: 16px; background: #f7f7f7; border-radius: 16px; border: 2px solid var(--color-cloud-gray);">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-          <div><strong>Customer Name:</strong><br/>${escapeHtml(entry.customerName)}</div>
-          <div><strong>Mobile:</strong><br/>${escapeHtml(entry.customerMobile)}</div>
-          <div><strong>Date:</strong><br/><span class="entry-date">${escapeHtml(dateStr)}</span></div>
-          <div><strong>Status:</strong><br/><span class="status-badge ${this.getInvoiceStatus(entry.students)}">${this.getInvoiceStatus(entry.students).toUpperCase()}</span></div>
+      <div class="invoice-summary-card">
+        <div class="invoice-summary-grid">
+          <div class="invoice-summary-item"><strong>Customer Name</strong><br/>${escapeHtml(entry.customerName)}</div>
+          <div class="invoice-summary-item"><strong>Mobile</strong><br/>${escapeHtml(entry.customerMobile)}</div>
+          <div class="invoice-summary-item"><strong>Date</strong><br/><span class="entry-date">${escapeHtml(dateStr)}</span></div>
+          <div class="invoice-summary-item"><strong>Status</strong><br/><span class="status-badge ${this.getInvoiceStatus(entry.students)}">${this.getInvoiceStatus(entry.students).toUpperCase()}</span></div>
         </div>
-        ${entry.invoiceMessage ? `<div class="mt-2"><strong>Message:</strong> ${escapeHtml(entry.invoiceMessage)}</div>` : ''}
+        ${entry.invoiceMessage ? `<div class="invoice-summary-msg"><strong>Message:</strong> ${escapeHtml(entry.invoiceMessage)}</div>` : ''}
       </div>
     `;
 
@@ -1222,10 +1284,15 @@ const Entries = {
           html += `
             <div class="entry-item">
               <div class="entry-item-info">
-                <span class="entry-item-name">${escapeHtml(item.name)}</span>
-                <span class="entry-item-qty">×${item.quantity}</span>
-                <span class="entry-item-price">${formatCurrency(item.sellingPrice * item.quantity)}</span>
-                <span class="status-badge ${itemStatusClass}" style="font-size: 0.7rem;">${itemStatus}</span>
+                <div class="entry-item-name-row">
+                  <span class="entry-item-name">${escapeHtml(item.name)}</span>
+                  <span class="entry-item-qty">x${item.quantity}</span>
+                </div>
+                <div class="entry-item-meta-row">
+                  <span class="entry-item-price">Total: ${formatCurrency(item.sellingPrice * item.quantity)}</span>
+                  <span class="status-badge ${itemStatusClass}">${itemStatus}</span>
+                </div>
+                ${item.message ? `<div class="entry-item-note">Note: ${escapeHtml(item.message)}</div>` : ''}
               </div>
               <div class="entry-item-actions">
                 ${this.renderItemActions(entry.invoiceNumber, sIndex, iIndex, item.status)}
