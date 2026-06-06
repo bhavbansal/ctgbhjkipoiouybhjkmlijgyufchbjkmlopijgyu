@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="Shyam Book Depot — School book management and invoice system. Manage schools, classes, books, notebooks, and generate invoices effortlessly.">
   <meta name="theme-color" content="#0F172A">
   <title>Shyam Book Depot</title>
@@ -15,7 +15,7 @@
   <nav id="navbar">
     <div class="nav-brand">
       <span class="nav-logo">🦉</span>
-      <span class="nav-title">shyam book depot</span>
+      <span class="nav-title">Shyam Book Depot</span>
     </div>
     <div class="nav-links">
       <a href="#" class="nav-link active" data-page="home" id="nav-home">
@@ -107,6 +107,7 @@
       <!-- Login Form (shown when not authenticated) -->
       <div id="admin-login">
         <div class="login-card">
+          <h2 class="text-center" style="margin-bottom: 24px;">🔐 Admin Login</h2>
           <div class="form-group">
             <label for="admin-username">Username</label>
             <input type="text" id="admin-username" placeholder="Enter username" autocomplete="username">
@@ -268,6 +269,25 @@
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="Modal.close('modal-invoice-details')">Close</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ── Bottom Mobile Navigation ── -->
+  <div class="bottom-nav">
+    <div class="bnav-inner">
+      <div class="bnav-indicator"></div>
+      <button class="bnav-btn active" id="bnav-home" data-page="home" data-index="0">
+        <span class="bnav-icon">🏠</span>
+        <span class="bnav-text">Home</span>
+      </button>
+      <button class="bnav-btn" id="bnav-entries" data-page="entries" data-index="1">
+        <span class="bnav-icon">📋</span>
+        <span class="bnav-text">Entries</span>
+      </button>
+      <button class="bnav-btn" id="bnav-admin" data-page="admin" data-index="2">
+        <span class="bnav-icon">⚙️</span>
+        <span class="bnav-text">Admin</span>
+      </button>
     </div>
   </div>
 
