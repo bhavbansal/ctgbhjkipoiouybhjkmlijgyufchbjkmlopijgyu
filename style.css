@@ -353,7 +353,7 @@ input, select, textarea {
    ============================================ */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 24px;
 }
 
@@ -739,6 +739,27 @@ input, select, textarea {
 /* ============================================
    12. ADMIN DASHBOARD
    ============================================ */
+/* Admin Login Centering */
+#admin-login {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  width: 100%;
+  padding: 40px 0;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-snow-white);
+  border: 2px solid var(--color-cloud-gray);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  box-shadow: 0 8px 0 var(--color-cloud-gray);
+  animation: fadeIn 0.3s ease;
+}
+
 #stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -820,6 +841,16 @@ input, select, textarea {
   color: var(--color-snow-white);
   border-color: var(--color-sky-blue-dark);
   box-shadow: 0 4px 0 var(--color-sky-blue-dark);
+}
+
+.admin-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.admin-panel-header h3 {
+  margin: 0;
 }
 
 /* ============================================
@@ -971,44 +1002,106 @@ input, select, textarea {
 /* ============================================
    16. RESPONSIVE
    ============================================ */
+/* Base Bottom Navigation */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  background: var(--color-snow-white);
+  border-top: 2px solid var(--color-cloud-gray);
+  border-radius: 24px 24px 0 0;
+  padding: 8px 24px 24px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+  display: none;
+}
+
+.bnav-inner {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.bnav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--color-graphite);
+  padding: 12px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.bnav-btn.active {
+  color: var(--color-sky-blue);
+}
+
+.bnav-btn .bnav-icon {
+  font-size: 24px;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bnav-btn.active .bnav-icon {
+  transform: translateY(-4px);
+}
+
+.bnav-text {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-din-round);
+}
+
+.bnav-indicator {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  width: 33.33%;
+  height: calc(100% - 8px);
+  background: rgba(28, 176, 246, 0.12);
+  border-radius: 16px;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 0;
+}
+
 @media (max-width: 768px) {
   #navbar {
-    top: auto;
-    bottom: 0;
-    padding: 0;
-    height: 65px;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-    border-top: 2px solid var(--color-cloud-gray);
-    border-bottom: none;
-  }
-  .nav-brand { display: none; }
-  .nav-links {
-    width: 100%;
-    justify-content: space-around;
-  }
-  .nav-link {
-    flex-direction: column;
-    padding: 8px 0;
-    gap: 4px;
-    font-size: 13px;
-    border-bottom: none;
-    border-top: 4px solid transparent;
-  }
-  .nav-link:hover, .nav-link.active:hover {
-    background: transparent;
+    position: fixed;
+    top: 0;
+    bottom: auto;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: var(--color-snow-white);
+    border-bottom: 2px solid var(--color-cloud-gray);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
     border-radius: 0;
-    margin: 0;
-    height: 100%;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
   }
-  .nav-link.active {
-    border-bottom: none;
-    border-top: 4px solid var(--color-sky-blue);
+  .nav-brand {
+    display: flex;
   }
-  .nav-link-icon { font-size: 20px; }
+  .nav-links {
+    display: none;
+  }
+  .bottom-nav {
+    display: block;
+  }
   
   #main-content {
-    padding-top: 24px;
-    padding-bottom: 90px;
+    padding-top: 94px;
+    padding-bottom: 110px;
   }
 
   .entry-date { display: none; }
@@ -1019,6 +1112,64 @@ input, select, textarea {
   }
   #stats-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .stat-card {
+    padding: 12px;
+    gap: 8px;
+  }
+  .stat-icon {
+    font-size: 28px;
+  }
+  .stat-value {
+    font-size: 24px;
+  }
+  .stat-label {
+    font-size: 11px;
+  }
+  #admin-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  #admin-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .admin-tab {
+    flex: 0 0 auto;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  .admin-panel-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .admin-list-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+  }
+  .admin-list-info {
+    text-align: center;
+  }
+  .admin-list-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+  .admin-list-actions .btn {
+    flex: 1;
+    margin: 0;
+  }
+  .admin-filters div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
   }
   .item-card {
     grid-template-columns: 1fr;
