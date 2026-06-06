@@ -295,7 +295,10 @@ const Home = {
       AppState.classes = [];
     }
 
-    document.getElementById('selected-school-name').textContent = schoolName;
+    const schoolNameEl = document.getElementById('selected-school-name');
+    if (schoolNameEl) {
+      schoolNameEl.textContent = schoolName;
+    }
     document.getElementById('school-selection').classList.add('hidden');
     document.getElementById('class-selection').classList.remove('hidden');
     this.renderClasses();
