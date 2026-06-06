@@ -40,26 +40,12 @@
     <section id="page-home" class="page active">
       <!-- School Selection View -->
       <div id="school-selection">
-        <div class="hero-header">
-          <lord-icon src="https://cdn.lordicon.com/kipolvof.json" trigger="hover" style="width:120px;height:120px"></lord-icon>
-          <div class="hero-text">
-            <h1 class="page-title">select a school.</h1>
-            <p class="page-subtitle">Choose a school to start creating an invoice</p>
-          </div>
-        </div>
         <div id="schools-grid" class="card-grid"></div>
       </div>
 
       <!-- Class Selection View (hidden initially) -->
       <div id="class-selection" class="hidden">
         <button id="back-to-schools" class="btn-back">← Back to Schools</button>
-        <div class="hero-header">
-          <lord-icon src="https://cdn.lordicon.com/dxjqnwhw.json" trigger="hover" style="width:120px;height:120px"></lord-icon>
-          <div class="hero-text">
-            <h2 id="selected-school-name" class="page-title"></h2>
-            <p class="page-subtitle">Select a class to view available books and notebooks</p>
-          </div>
-        </div>
         <div id="classes-grid" class="card-grid"></div>
       </div>
 
@@ -91,13 +77,6 @@
 
     <!-- ===== ENTRIES PAGE ===== -->
     <section id="page-entries" class="page hidden">
-      <div class="hero-header">
-        <lord-icon src="https://cdn.lordicon.com/jvucoldz.json" trigger="hover" style="width:120px;height:120px"></lord-icon>
-        <div class="hero-text">
-          <h1 class="page-title">invoice entries.</h1>
-          <p class="page-subtitle">View and manage all generated invoices</p>
-        </div>
-      </div>
       <div id="entries-search">
         <div class="search-input-wrapper">
           <span class="search-icon">🔍</span>
@@ -127,9 +106,6 @@
       <!-- Login Form (shown when not authenticated) -->
       <div id="admin-login">
         <div class="login-card">
-          <lord-icon src="https://cdn.lordicon.com/rpgnfaeb.json" trigger="hover" style="width:100px;height:100px;margin: 0 auto 16px;display:block;"></lord-icon>
-          <h1 class="page-title">admin login.</h1>
-          <p class="login-subtitle">Enter your credentials to access the dashboard</p>
           <div class="form-group">
             <label for="admin-username">Username</label>
             <input type="text" id="admin-username" placeholder="Enter username" autocomplete="username">
@@ -146,13 +122,6 @@
       <!-- Admin Dashboard (hidden until login) -->
       <div id="admin-dashboard" class="hidden">
         <div id="admin-header">
-          <div class="hero-header">
-            <lord-icon src="https://cdn.lordicon.com/rpgnfaeb.json" trigger="hover" style="width:120px;height:120px"></lord-icon>
-            <div class="hero-text">
-              <h1 class="page-title">admin dashboard.</h1>
-              <p class="page-subtitle">Manage your inventory and monitor activity</p>
-            </div>
-          </div>
           <button id="btn-admin-logout" class="btn btn-danger">🚪 Logout</button>
         </div>
 
@@ -220,7 +189,7 @@
       <div class="modal-body">
         <div class="form-group">
           <label for="checkout-mobile">Customer Mobile Number</label>
-          <input type="text" id="checkout-mobile" placeholder="Enter exactly 10-digits" pattern="\d{10}" maxlength="10">
+          <input type="text" id="checkout-mobile" placeholder="Enter exactly 10-digits" pattern="\d{10}" maxlength="10" inputmode="numeric">
         </div>
         <div class="form-group">
           <label for="checkout-name">Customer Name</label>
