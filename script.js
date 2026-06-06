@@ -140,20 +140,82 @@ function hideLoading() {
   document.getElementById('loading').classList.add('hidden');
 }
 
-function formatDate(dateString) {
-  if (!dateString) return '';
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return dateString;
+function formatUserFriendlyDateTime(dateVal, timeVal) {
+  if (!dateVal) return '';
+
+  let year = null, month = null, day = null;
+  
+  // Try parsing dateVal as a Date object or ISO string
+  const parsedDate = new Date(dateVal);
+  if (!isNaN(parsedDate)) {
+    year = parsedDate.getFullYear();
+    month = parsedDate.getMonth();
+    day = parsedDate.getDate();
+  } else if (typeof dateVal === 'string') {
+    // Try dd/mm/yyyy
+    if (dateVal.includes('/')) {
+      const parts = dateVal.split('/');
+      if (parts.length === 3) {
+        day = parseInt(parts[0]);
+        month = parseInt(parts[1]) - 1;
+        year = parseInt(parts[2]);
+      }
+    } else if (dateVal.includes('-')) {
+      // Try yyyy-mm-dd
+      const parts = dateVal.split('-');
+      if (parts.length === 3) {
+        year = parseInt(parts[0]);
+        month = parseInt(parts[1]) - 1;
+        day = parseInt(parts[2]);
+      }
+    }
   }
+
+  if (year === null || month === null || day === null || isNaN(year) || isNaN(month) || isNaN(day)) {
+    // Fallback if we cannot parse the date
+    return `${dateVal} ${timeVal || ''}`.trim();
+  }
+
+  let hours = 0, minutes = 0;
+  if (timeVal) {
+    const parsedTime = new Date(timeVal);
+    if (!isNaN(parsedTime) && String(timeVal).includes('T')) {
+      hours = parsedTime.getHours();
+      minutes = parsedTime.getMinutes();
+    } else if (typeof timeVal === 'string') {
+      const cleanTime = timeVal.trim().toUpperCase();
+      const isPM = cleanTime.includes('PM');
+      const isAM = cleanTime.includes('AM');
+      const timeDigits = cleanTime.replace(/[A-Z\s]/g, '');
+      const parts = timeDigits.split(':');
+      if (parts.length >= 2) {
+        hours = parseInt(parts[0]);
+        minutes = parseInt(parts[1]);
+        if (isPM && hours < 12) hours += 12;
+        if (isAM && hours === 12) hours = 0;
+      }
+    }
+  }
+
+  // Create combined local Date object
+  const combined = new Date(year, month, day, hours, minutes);
+  if (isNaN(combined)) {
+    return `${dateVal} ${timeVal || ''}`.trim();
+  }
+  
+  // Format as: "Jun 05, 2026, 6:30 PM"
+  const monthNamesShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthShort = monthNamesShort[combined.getMonth()];
+  const dayStr = String(combined.getDate()).padStart(2, '0');
+  const yearStr = combined.getFullYear();
+  
+  let hours12 = combined.getHours();
+  const ampm = hours12 >= 12 ? 'PM' : 'AM';
+  hours12 = hours12 % 12;
+  hours12 = hours12 ? hours12 : 12; // the hour '0' should be '12'
+  const minStr = String(combined.getMinutes()).padStart(2, '0');
+  
+  return `${monthShort} ${dayStr}, ${yearStr}, ${hours12}:${minStr} ${ampm}`;
 }
 
 function formatCurrency(amount) {
@@ -211,6 +273,20 @@ const Router = {
     const activeLink = document.querySelector(`.nav-link[data-page="${page}"]`);
     if (activeLink) {
       activeLink.classList.add('active');
+    }
+
+    // Update bottom nav links if they exist
+    document.querySelectorAll('.bnav-btn').forEach((btn) => {
+      btn.classList.remove('active');
+    });
+    const activeBnav = document.getElementById(`bnav-${page}`);
+    if (activeBnav) {
+      activeBnav.classList.add('active');
+      const index = activeBnav.getAttribute('data-index');
+      const indicator = document.querySelector('.bnav-indicator');
+      if (indicator) {
+        indicator.style.transform = `translateX(calc(${index} * 100%))`;
+      }
     }
 
     AppState.currentPage = page;
@@ -1028,8 +1104,7 @@ const Entries = {
       .map((entry) => {
         const status = this.getInvoiceStatus(entry.students);
         const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
-        const dateObj = new Date(`${entry.date}T${entry.time}`);
-        const dateStr = isNaN(dateObj) ? `${entry.date} ${entry.time}` : dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + ', ' + dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        const dateStr = formatUserFriendlyDateTime(entry.date, entry.time);
 
         return `
           <div class="entry-card" id="entry-${escapeHtml(entry.invoiceNumber)}">
@@ -1101,8 +1176,7 @@ const Entries = {
 
     document.getElementById('invoice-details-title').textContent = `Invoice #${entry.invoiceNumber}`;
     
-    const dateObj = new Date(`${entry.date}T${entry.time}`);
-    const dateStr = isNaN(dateObj) ? `${entry.date} ${entry.time}` : dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + ', ' + dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const dateStr = formatUserFriendlyDateTime(entry.date, entry.time);
 
     let html = `
       <div style="margin-bottom: 24px; padding: 16px; background: #f7f7f7; border-radius: 16px; border: 2px solid var(--color-cloud-gray);">
@@ -2027,6 +2101,16 @@ document.addEventListener('DOMContentLoaded', () => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const page = link.dataset.page;
+      if (page) {
+        Router.navigate(page);
+      }
+    });
+  });
+
+  document.querySelectorAll('.bnav-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const page = btn.dataset.page;
       if (page) {
         Router.navigate(page);
       }
