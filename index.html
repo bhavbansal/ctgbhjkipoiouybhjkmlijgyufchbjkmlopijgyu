@@ -1,253 +1,318 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Periodic Table</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Shyam Book Depot — School book management and invoice system. Manage schools, classes, books, notebooks, and generate invoices effortlessly.">
+  <meta name="theme-color" content="#0F172A">
+  <title>Shyam Book Depot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700&family=Nunito+Sans:opsz,wght@6..12,500;6..12,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.lordicon.com/lordicon.js"></script>
 </head>
 <body>
-
-    <div class="page-wrapper">
-        <div class="left-placeholder">
-            </div>
-
-        <div class="right-content">
-            <div class="temp-bar-container">
-                <div class="slider-wrapper">
-                    <div class="temp-labels">
-                        <span>0 K</span>
-                        <span>6000 K</span>
-                    </div>
-                    <input type="range" min="0" max="6000" value="273" id="temp-slider" class="slider">
-                </div>
-                <div id="temp-display" class="temp-display">
-                    <span id="temp-k">273 K</span>
-                    <span id="temp-c">0 °C</span>
-                    <span id="temp-f">32 °F</span>
-                </div>
-            </div>
-
-            <div class="periodic-table-container">
-                <div class="periodic-table">
-                    <div class="grid-label group-number" style="grid-column: 2;">1</div>
-                    <div class="grid-label group-number" style="grid-column: 3;">2</div>
-                    <div class="grid-label group-number" style="grid-column: 4;">3</div>
-                    <div class="grid-label group-number" style="grid-column: 5;">4</div>
-                    <div class="grid-label group-number" style="grid-column: 6;">5</div>
-                    <div class="grid-label group-number" style="grid-column: 7;">6</div>
-                    <div class="grid-label group-number" style="grid-column: 8;">7</div>
-                    <div class="grid-label group-number" style="grid-column: 9;">8</div>
-                    <div class="grid-label group-number" style="grid-column: 10;">9</div>
-                    <div class="grid-label group-number" style="grid-column: 11;">10</div>
-                    <div class="grid-label group-number" style="grid-column: 12;">11</div>
-                    <div class="grid-label group-number" style="grid-column: 13;">12</div>
-                    <div class="grid-label group-number" style="grid-column: 14;">13</div>
-                    <div class="grid-label group-number" style="grid-column: 15;">14</div>
-                    <div class="grid-label group-number" style="grid-column: 16;">15</div>
-                    <div class="grid-label group-number" style="grid-column: 17;">16</div>
-                    <div class="grid-label group-number" style="grid-column: 18;">17</div>
-                    <div class="grid-label group-number" style="grid-column: 19;">18</div>
-
-                    <div class="grid-label period-number" style="grid-row: 2;">1</div>
-                    <div class="element nonmetal" style="grid-column: 2; grid-row: 2;"><div class="atomic-number">1</div><div class="symbol">H</div><div class="name">Hydrogen</div><div class="atomic-mass">1.008</div></div>
-                    <div class="element noble-gas" style="grid-column: 19; grid-row: 2;"><div class="atomic-number">2</div><div class="symbol">He</div><div class="name">Helium</div><div class="atomic-mass">4.0026</div></div>
-
-                    <div class="grid-label period-number" style="grid-row: 3;">2</div>
-                    <div class="element alkali-metal" style="grid-column: 2; grid-row: 3;"><div class="atomic-number">3</div><div class="symbol">Li</div><div class="name">Lithium</div><div class="atomic-mass">6.94</div></div>
-                    <div class="element alkaline-earth-metal" style="grid-column: 3; grid-row: 3;"><div class="atomic-number">4</div><div class="symbol">Be</div><div class="name">Beryllium</div><div class="atomic-mass">9.0122</div></div>
-                    
-                    <div class="top-placeholder" style="grid-column: 4 / 14; grid-row: 2 / 9;">
-                        <div class="legend-content">
-                            <div class="legend-column state-of-matter-column">
-                                <div class="legend-item state-solid">
-                                    <div class="legend-element-box symbol-c">C</div> Solid
-                                </div>
-                                <div class="legend-item state-liquid">
-                                    <div class="legend-element-box symbol-hg">Hg</div> Liquid
-                                </div>
-                                <div class="legend-item state-gas">
-                                    <div class="legend-element-box symbol-h">H</div> Gas
-                                </div>
-                                <div class="legend-item state-unknown">
-                                    <div class="legend-element-box symbol-rf">Rf</div> Unknown
-                                </div>
-                            </div>
-
-                            <div class="legend-column element-type-column">
-                                <div class="element-type-group metals-group">
-                                    <div class="group-title">Metals</div>
-                                    <div class="group-categories">
-                                        <div class="category-box alkali-metal vertical">Alkali metals</div>
-                                        <div class="category-box alkaline-earth-metal vertical">Alkaline earth</div>
-                                        <div class="f-block-categories">
-                                            <div class="category-box lanthanide">Lanthanoids</div>
-                                            <div class="category-box actinide">Actinoids</div>
-                                        </div>
-                                        <div class="category-box transition-metal vertical">Transition metals</div>
-                                        <div class="category-box post-transition-metal vertical">Post-transition metals</div>
-                                    </div>
-                                </div>
-                                <div class="element-type-group other-metals-group">
-                                    <div class="category-box metalloid vertical">Metalloids</div>
-                                </div>
-                                <div class="element-type-group nonmetals-group">
-                                    <div class="group-title">Nonmetals</div>
-                                    <div class="group-categories">
-                                        <div class="category-box nonmetal vertical">Reactive nonmetals</div>
-                                        <div class="category-box noble-gas vertical">Noble gases</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="element metalloid" style="grid-column: 14; grid-row: 3;"><div class="atomic-number">5</div><div class="symbol">B</div><div class="name">Boron</div><div class="atomic-mass">10.81</div></div>
-                    <div class="element nonmetal" style="grid-column: 15; grid-row: 3;"><div class="atomic-number">6</div><div class="symbol">C</div><div class="name">Carbon</div><div class="atomic-mass">12.011</div></div>
-                    <div class="element nonmetal" style="grid-column: 16; grid-row: 3;"><div class="atomic-number">7</div><div class="symbol">N</div><div class="name">Nitrogen</div><div class="atomic-mass">14.007</div></div>
-                    <div class="element nonmetal" style="grid-column: 17; grid-row: 3;"><div class="atomic-number">8</div><div class="symbol">O</div><div class="name">Oxygen</div><div class="atomic-mass">15.999</div></div>
-                    <div class="element halogen" style="grid-column: 18; grid-row: 3;"><div class="atomic-number">9</div><div class="symbol">F</div><div class="name">Fluorine</div><div class="atomic-mass">18.998</div></div>
-                    <div class="element noble-gas" style="grid-column: 19; grid-row: 3;"><div class="atomic-number">10</div><div class="symbol">Ne</div><div class="name">Neon</div><div class="atomic-mass">20.180</div></div>
-
-                    <div class="grid-label period-number" style="grid-row: 4;">3</div>
-                    <div class="element alkali-metal" style="grid-column: 2; grid-row: 4;"><div class="atomic-number">11</div><div class="symbol">Na</div><div class="name">Sodium</div><div class="atomic-mass">22.990</div></div>
-                    <div class="element alkaline-earth-metal" style="grid-column: 3; grid-row: 4;"><div class="atomic-number">12</div><div class="symbol">Mg</div><div class="name">Magnesium</div><div class="atomic-mass">24.305</div></div>
-                    <div class="element post-transition-metal" style="grid-column: 14; grid-row: 4;"><div class="atomic-number">13</div><div class="symbol">Al</div><div class="name">Aluminum</div><div class="atomic-mass">26.982</div></div>
-                    <div class="element metalloid" style="grid-column: 15; grid-row: 4;"><div class="atomic-number">14</div><div class="symbol">Si</div><div class="name">Silicon</div><div class="atomic-mass">28.085</div></div>
-                    <div class="element nonmetal" style="grid-column: 16; grid-row: 4;"><div class="atomic-number">15</div><div class="symbol">P</div><div class="name">Phosphorus</div><div class="atomic-mass">30.974</div></div>
-                    <div class="element nonmetal" style="grid-column: 17; grid-row: 4;"><div class="atomic-number">16</div><div class="symbol">S</div><div class="name">Sulfur</div><div class="atomic-mass">32.06</div></div>
-                    <div class="element halogen" style="grid-column: 18; grid-row: 4;"><div class="atomic-number">17</div><div class="symbol">Cl</div><div class="name">Chlorine</div><div class="atomic-mass">35.45</div></div>
-                    <div class="element noble-gas" style="grid-column: 19; grid-row: 4;"><div class="atomic-number">18</div><div class="symbol">Ar</div><div class="name">Argon</div><div class="atomic-mass">39.948</div></div>
-
-                    <div class="grid-label period-number" style="grid-row: 5;">4</div>
-                    <div class="element alkali-metal" style="grid-column: 2; grid-row: 5;"><div class="atomic-number">19</div><div class="symbol">K</div><div class="name">Potassium</div><div class="atomic-mass">39.098</div></div>
-                    <div class="element alkaline-earth-metal" style="grid-column: 3; grid-row: 5;"><div class="atomic-number">20</div><div class="symbol">Ca</div><div class="name">Calcium</div><div class="atomic-mass">40.078</div></div>
-                    <div class="element transition-metal" style="grid-column: 4; grid-row: 5;"><div class="atomic-number">21</div><div class="symbol">Sc</div><div class="name">Scandium</div><div class="atomic-mass">44.956</div></div>
-                    <div class="element transition-metal" style="grid-column: 5; grid-row: 5;"><div class="atomic-number">22</div><div class="symbol">Ti</div><div class="name">Titanium</div><div class="atomic-mass">47.867</div></div>
-                    <div class="element transition-metal" style="grid-column: 6; grid-row: 5;"><div class="atomic-number">23</div><div class="symbol">V</div><div class="name">Vanadium</div><div class="atomic-mass">50.942</div></div>
-                    <div class="element transition-metal" style="grid-column: 7; grid-row: 5;"><div class="atomic-number">24</div><div class="symbol">Cr</div><div class="name">Chromium</div><div class="atomic-mass">51.996</div></div>
-                    <div class="element transition-metal" style="grid-column: 8; grid-row: 5;"><div class="atomic-number">25</div><div class="symbol">Mn</div><div class="name">Manganese</div><div class="atomic-mass">54.938</div></div>
-                    <div class="element transition-metal" style="grid-column: 9; grid-row: 5;"><div class="atomic-number">26</div><div class="symbol">Fe</div><div class="name">Iron</div><div class="atomic-mass">55.845</div></div>
-                    <div class="element transition-metal" style="grid-column: 10; grid-row: 5;"><div class="atomic-number">27</div><div class="symbol">Co</div><div class="name">Cobalt</div><div class="atomic-mass">58.933</div></div>
-                    <div class="element transition-metal" style="grid-column: 11; grid-row: 5;"><div class="atomic-number">28</div><div class="symbol">Ni</div><div class="name">Nickel</div><div class="atomic-mass">58.693</div></div>
-                    <div class="element transition-metal" style="grid-column: 12; grid-row: 5;"><div class="atomic-number">29</div><div class="symbol">Cu</div><div class="name">Copper</div><div class="atomic-mass">63.546</div></div>
-                    <div class="element transition-metal" style="grid-column: 13; grid-row: 5;"><div class="atomic-number">30</div><div class="symbol">Zn</div><div class="name">Zinc</div><div class="atomic-mass">65.38</div></div>
-                    <div class="element post-transition-metal" style="grid-column: 14; grid-row: 5;"><div class="atomic-number">31</div><div class="symbol">Ga</div><div class="name">Gallium</div><div class="atomic-mass">69.723</div></div>
-                    <div class="element metalloid" style="grid-column: 15; grid-row: 5;"><div class="atomic-number">32</div><div class="symbol">Ge</div><div class="name">Germanium</div><div class="atomic-mass">72.630</div></div>
-                    <div class="element metalloid" style="grid-column: 16; grid-row: 5;"><div class="atomic-number">33</div><div class="symbol">As</div><div class="name">Arsenic</div><div class="atomic-mass">74.922</div></div>
-                    <div class="element nonmetal" style="grid-column: 17; grid-row: 5;"><div class="atomic-number">34</div><div class="symbol">Se</div><div class="name">Selenium</div><div class="atomic-mass">78.971</div></div>
-                    <div class="element halogen" style="grid-column: 18; grid-row: 5;"><div class="atomic-number">35</div><div class="symbol">Br</div><div class="name">Bromine</div><div class="atomic-mass">79.904</div></div>
-                    <div class="element noble-gas" style="grid-column: 19; grid-row: 5;"><div class="atomic-number">36</div><div class="symbol">Kr</div><div class="name">Krypton</div><div class="atomic-mass">83.798</div></div>
-
-                    <div class="grid-label period-number" style="grid-row: 6;">5</div>
-                    <div class="element alkali-metal" style="grid-column: 2; grid-row: 6;"><div class="atomic-number">37</div><div class="symbol">Rb</div><div class="name">Rubidium</div><div class="atomic-mass">85.468</div></div>
-                    <div class="element alkaline-earth-metal" style="grid-column: 3; grid-row: 6;"><div class="atomic-number">38</div><div class="symbol">Sr</div><div class="name">Strontium</div><div class="atomic-mass">87.62</div></div>
-                    <div class="element transition-metal" style="grid-column: 4; grid-row: 6;"><div class="atomic-number">39</div><div class="symbol">Y</div><div class="name">Yttrium</div><div class="atomic-mass">88.906</div></div>
-                    <div class="element transition-metal" style="grid-column: 5; grid-row: 6;"><div class="atomic-number">40</div><div class="symbol">Zr</div><div class="name">Zirconium</div><div class="atomic-mass">91.224</div></div>
-                    <div class="element transition-metal" style="grid-column: 6; grid-row: 6;"><div class="atomic-number">41</div><div class="symbol">Nb</div><div class="name">Niobium</div><div class="atomic-mass">92.906</div></div>
-                    <div class="element transition-metal" style="grid-column: 7; grid-row: 6;"><div class="atomic-number">42</div><div class="symbol">Mo</div><div class="name">Molybdenum</div><div class="atomic-mass">95.96</div></div>
-                    <div class="element transition-metal" style="grid-column: 8; grid-row: 6;"><div class="atomic-number">43</div><div class="symbol">Tc</div><div class="name">Technetium</div><div class="atomic-mass">(98)</div></div>
-                    <div class="element transition-metal" style="grid-column: 9; grid-row: 6;"><div class="atomic-number">44</div><div class="symbol">Ru</div><div class="name">Ruthenium</div><div class="atomic-mass">101.07</div></div>
-                    <div class="element transition-metal" style="grid-column: 10; grid-row: 6;"><div class="atomic-number">45</div><div class="symbol">Rh</div><div class="name">Rhodium</div><div class="atomic-mass">102.91</div></div>
-                    <div class="element transition-metal" style="grid-column: 11; grid-row: 6;"><div class="atomic-number">46</div><div class="symbol">Pd</div><div class="name">Palladium</div><div class="atomic-mass">106.42</div></div>
-                    <div class="element transition-metal" style="grid-column: 12; grid-row: 6;"><div class="atomic-number">47</div><div class="symbol">Ag</div><div class="name">Silver</div><div class="atomic-mass">107.87</div></div>
-                    <div class="element transition-metal" style="grid-column: 13; grid-row: 6;"><div class="atomic-number">48</div><div class="symbol">Cd</div><div class="name">Cadmium</div><div class="atomic-mass">112.41</div></div>
-                    <div class="element post-transition-metal" style="grid-column: 14; grid-row: 6;"><div class="atomic-number">49</div><div class="symbol">In</div><div class="name">Indium</div><div class="atomic-mass">114.82</div></div>
-                    <div class="element post-transition-metal" style="grid-column: 15; grid-row: 6;"><div class="atomic-number">50</div><div class="symbol">Sn</div><div class="name">Tin</div><div class="atomic-mass">118.71</div></div>
-                    <div class="element metalloid" style="grid-column: 16; grid-row: 6;"><div class="atomic-number">51</div><div class="symbol">Sb</div><div class="name">Antimony</div><div class="atomic-mass">121.76</div></div>
-                    <div class="element metalloid" style="grid-column: 17; grid-row: 6;"><div class="atomic-number">52</div><div class="symbol">Te</div><div class="name">Tellurium</div><div class="atomic-mass">127.60</div></div>
-                    <div class="element halogen" style="grid-column: 18; grid-row: 6;"><div class="atomic-number">53</div><div class="symbol">I</div><div class="name">Iodine</div><div class="atomic-mass">126.90</div></div>
-                    <div class="element noble-gas" style="grid-column: 19; grid-row: 6;"><div class="atomic-number">54</div><div class="symbol">Xe</div><div class="name">Xenon</div><div class="atomic-mass">131.29</div></div>
-
-                    <div class="grid-label period-number" style="grid-row: 7;">6</div>
-                    <div class="element alkali-metal" style="grid-column: 2; grid-row: 7;"><div class="atomic-number">55</div><div class="symbol">Cs</div><div class="name">Cesium</div><div class="atomic-mass">132.91</div></div>
-                    <div class="element alkaline-earth-metal" style="grid-column: 3; grid-row: 7;"><div class="atomic-number">56</div><div class="symbol">Ba</div><div class="name">Barium</div><div class="atomic-mass">137.33</div></div>
-                    <div class="element placeholder lanthanide-series-block" style="grid-column: 4; grid-row: 7;"><div class="atomic-number">57-71</div></div>
-                    <div class="element transition-metal" style="grid-column: 5; grid-row: 7;"><div class="atomic-number">72</div><div class="symbol">Hf</div><div class="name">Hafnium</div><div class="atomic-mass">178.49</div></div>
-                    <div class="element transition-metal" style="grid-column: 6; grid-row: 7;"><div class="atomic-number">73</div><div class="symbol">Ta</div><div class="name">Tantalum</div><div class="atomic-mass">180.95</div></div>
-                    <div class="element transition-metal" style="grid-column: 7; grid-row: 7;"><div class="atomic-number">74</div><div class="symbol">W</div><div class="name">Tungsten</div><div class="atomic-mass">183.84</div></div>
-                    <div class="element transition-metal" style="grid-column: 8; grid-row: 7;"><div class="atomic-number">75</div><div class="symbol">Re</div><div class="name">Rhenium</div><div class="atomic-mass">186.21</div></div>
-                    <div class="element transition-metal" style="grid-column: 9; grid-row: 7;"><div class="atomic-number">76</div><div class="symbol">Os</div><div class="name">Osmium</div><div class="atomic-mass">190.23</div></div>
-                    <div class="element transition-metal" style="grid-column: 10; grid-row: 7;"><div class="atomic-number">77</div><div class="symbol">Ir</div><div class="name">Iridium</div><div class="atomic-mass">192.22</div></div>
-                    <div class="element transition-metal" style="grid-column: 11; grid-row: 7;"><div class="atomic-number">78</div><div class="symbol">Pt</div><div class="name">Platinum</div><div class="atomic-mass">195.08</div></div>
-                    <div class="element transition-metal" style="grid-column: 12; grid-row: 7;"><div class="atomic-number">79</div><div class="symbol">Au</div><div class="name">Gold</div><div class="atomic-mass">196.97</div></div>
-                    <div class="element transition-metal" style="grid-column: 13; grid-row: 7;"><div class="atomic-number">80</div><div class="symbol">Hg</div><div class="name">Mercury</div><div class="atomic-mass">200.59</div></div>
-                    <div class="element post-transition-metal" style="grid-column: 14; grid-row: 7;"><div class="atomic-number">81</div><div class="symbol">Tl</div><div class="name">Thallium</div><div class="atomic-mass">204.38</div></div>
-                    <div class="element post-transition-metal" style="grid-column: 15; grid-row: 7;"><div class="atomic-number">82</div><div class="symbol">Pb</div><div class="name">Lead</div><div class="atomic-mass">207.2</div></div>
-                    <div class="element post-transition-metal" style="grid-column: 16; grid-row: 7;"><div class="atomic-number">83</div><div class="symbol">Bi</div><div class="name">Bismuth</div><div class="atomic-mass">208.98</div></div>
-                    <div class="element post-transition-metal" style="grid-column: 17; grid-row: 7;"><div class="atomic-number">84</div><div class="symbol">Po</div><div class="name">Polonium</div><div class="atomic-mass">(209)</div></div>
-                    <div class="element halogen" style="grid-column: 18; grid-row: 7;"><div class="atomic-number">85</div><div class="symbol">At</div><div class="name">Astatine</div><div class="atomic-mass">(210)</div></div>
-                    <div class="element noble-gas" style="grid-column: 19; grid-row: 7;"><div class="atomic-number">86</div><div class="symbol">Rn</div><div class="name">Radon</div><div class="atomic-mass">(222)</div></div>
-
-                    <div class="grid-label period-number" style="grid-row: 8;">7</div>
-                    <div class="element alkali-metal" style="grid-column: 2; grid-row: 8;"><div class="atomic-number">87</div><div class="symbol">Fr</div><div class="name">Francium</div><div class="atomic-mass">(223)</div></div>
-                    <div class="element alkaline-earth-metal" style="grid-column: 3; grid-row: 8;"><div class="atomic-number">88</div><div class="symbol">Ra</div><div class="name">Radium</div><div class="atomic-mass">(226)</div></div>
-                    <div class="element placeholder actinide-series-block" style="grid-column: 4; grid-row: 8;"><div class="atomic-number">89-103</div></div>
-                    <div class="element transition-metal" style="grid-column: 5; grid-row: 8;"><div class="atomic-number">104</div><div class="symbol">Rf</div><div class="name">Rutherfordium</div><div class="atomic-mass">(267)</div></div>
-                    <div class="element transition-metal" style="grid-column: 6; grid-row: 8;"><div class="atomic-number">105</div><div class="symbol">Db</div><div class="name">Dubnium</div><div class="atomic-mass">(268)</div></div>
-                    <div class="element transition-metal" style="grid-column: 7; grid-row: 8;"><div class="atomic-number">106</div><div class="symbol">Sg</div><div class="name">Seaborgium</div><div class="atomic-mass">(271)</div></div>
-                    <div class="element transition-metal" style="grid-column: 8; grid-row: 8;"><div class="atomic-number">107</div><div class="symbol">Bh</div><div class="name">Bohrium</div><div class="atomic-mass">(272)</div></div>
-                    <div class="element transition-metal" style="grid-column: 9; grid-row: 8;"><div class="atomic-number">108</div><div class="symbol">Hs</div><div class="name">Hassium</div><div class="atomic-mass">(277)</div></div>
-                    <div class="element unknown" style="grid-column: 10; grid-row: 8;"><div class="atomic-number">109</div><div class="symbol">Mt</div><div class="name">Meitnerium</div><div class="atomic-mass">(278)</div></div>
-                    <div class="element unknown" style="grid-column: 11; grid-row: 8;"><div class="atomic-number">110</div><div class="symbol">Ds</div><div class="name">Darmstadtium</div><div class="atomic-mass">(281)</div></div>
-                    <div class="element unknown" style="grid-column: 12; grid-row: 8;"><div class="atomic-number">111</div><div class="symbol">Rg</div><div class="name">Roentgenium</div><div class="atomic-mass">(282)</div></div>
-                    <div class="element unknown" style="grid-column: 13; grid-row: 8;"><div class="atomic-number">112</div><div class="symbol">Cn</div><div class="name">Copernicium</div><div class="atomic-mass">(285)</div></div>
-                    <div class="element unknown" style="grid-column: 14; grid-row: 8;"><div class="atomic-number">113</div><div class="symbol">Nh</div><div class="name">Nihonium</div><div class="atomic-mass">(286)</div></div>
-                    <div class="element unknown" style="grid-column: 15; grid-row: 8;"><div class="atomic-number">114</div><div class="symbol">Fl</div><div class="name">Flerovium</div><div class="atomic-mass">(289)</div></div>
-                    <div class="element unknown" style="grid-column: 16; grid-row: 8;"><div class="atomic-number">115</div><div class="symbol">Mc</div><div class="name">Moscovium</div><div class="atomic-mass">(290)</div></div>
-                    <div class="element unknown" style="grid-column: 17; grid-row: 8;"><div class="atomic-number">116</div><div class="symbol">Lv</div><div class="name">Livermorium</div><div class="atomic-mass">(293)</div></div>
-                    <div class="element unknown" style="grid-column: 18; grid-row: 8;"><div class="atomic-number">117</div><div class="symbol">Ts</div><div class="name">Tennessine</div><div class="atomic-mass">(294)</div></div>
-                    <div class="element unknown" style="grid-column: 19; grid-row: 8;"><div class="atomic-number">118</div><div class="symbol">Og</div><div class="name">Oganesson</div><div class="atomic-mass">(294)</div></div>
-
-                    <div class="grid-label f-block-label" style="grid-row: 9; grid-column: 2 / 19;">For elements with no stable isotopes, the mass number of the isotope with the longest half-life is in parentheses.</div>
-                    
-                    <div class="grid-label period-number" style="grid-row: 10;">6</div>
-                    <div class="element lanthanide" style="grid-column: 4; grid-row: 10;"><div class="atomic-number">57</div><div class="symbol">La</div><div class="name">Lanthanum</div><div class="atomic-mass">138.91</div></div>
-                    <div class="element lanthanide" style="grid-column: 5; grid-row: 10;"><div class="atomic-number">58</div><div class="symbol">Ce</div><div class="name">Cerium</div><div class="atomic-mass">140.12</div></div>
-                    <div class="element lanthanide" style="grid-column: 6; grid-row: 10;"><div class="atomic-number">59</div><div class="symbol">Pr</div><div class="name">Praseodymium</div><div class="atomic-mass">140.91</div></div>
-                    <div class="element lanthanide" style="grid-column: 7; grid-row: 10;"><div class="atomic-number">60</div><div class="symbol">Nd</div><div class="name">Neodymium</div><div class="atomic-mass">144.24</div></div>
-                    <div class="element lanthanide" style="grid-column: 8; grid-row: 10;"><div class="atomic-number">61</div><div class="symbol">Pm</div><div class="name">Promethium</div><div class="atomic-mass">(145)</div></div>
-                    <div class="element lanthanide" style="grid-column: 9; grid-row: 10;"><div class="atomic-number">62</div><div class="symbol">Sm</div><div class="name">Samarium</div><div class="atomic-mass">150.36</div></div>
-                    <div class="element lanthanide" style="grid-column: 10; grid-row: 10;"><div class="atomic-number">63</div><div class="symbol">Eu</div><div class="name">Europium</div><div class="atomic-mass">151.96</div></div>
-                    <div class="element lanthanide" style="grid-column: 11; grid-row: 10;"><div class="atomic-number">64</div><div class="symbol">Gd</div><div class="name">Gadolinium</div><div class="atomic-mass">157.25</div></div>
-                    <div class="element lanthanide" style="grid-column: 12; grid-row: 10;"><div class="atomic-number">65</div><div class="symbol">Tb</div><div class="name">Terbium</div><div class="atomic-mass">158.93</div></div>
-                    <div class="element lanthanide" style="grid-column: 13; grid-row: 10;"><div class="atomic-number">66</div><div class="symbol">Dy</div><div class="name">Dysprosium</div><div class="atomic-mass">162.50</div></div>
-                    <div class="element lanthanide" style="grid-column: 14; grid-row: 10;"><div class="atomic-number">67</div><div class="symbol">Ho</div><div class="name">Holmium</div><div class="atomic-mass">164.93</div></div>
-                    <div class="element lanthanide" style="grid-column: 15; grid-row: 10;"><div class="atomic-number">68</div><div class="symbol">Er</div><div class="name">Erbium</div><div class="atomic-mass">167.26</div></div>
-                    <div class="element lanthanide" style="grid-column: 16; grid-row: 10;"><div class="atomic-number">69</div><div class="symbol">Tm</div><div class="name">Thulium</div><div class="atomic-mass">168.93</div></div>
-                    <div class="element lanthanide" style="grid-column: 17; grid-row: 10;"><div class="atomic-number">70</div><div class="symbol">Yb</div><div class="name">Ytterbium</div><div class="atomic-mass">173.05</div></div>
-                    <div class="element lanthanide" style="grid-column: 18; grid-row: 10;"><div class="atomic-number">71</div><div class="symbol">Lu</div><div class="name">Lutetium</div><div class="atomic-mass">174.97</div></div>
-
-                    <div class="grid-label period-number" style="grid-row: 11;">7</div>
-                    <div class="element actinide" style="grid-column: 4; grid-row: 11;"><div class="atomic-number">89</div><div class="symbol">Ac</div><div class="name">Actinium</div><div class="atomic-mass">(227)</div></div>
-                    <div class="element actinide" style="grid-column: 5; grid-row: 11;"><div class="atomic-number">90</div><div class="symbol">Th</div><div class="name">Thorium</div><div class="atomic-mass">232.04</div></div>
-                    <div class="element actinide" style="grid-column: 6; grid-row: 11;"><div class="atomic-number">91</div><div class="symbol">Pa</div><div class="name">Protactinium</div><div class="atomic-mass">231.04</div></div>
-                    <div class="element actinide" style="grid-column: 7; grid-row: 11;"><div class="atomic-number">92</div><div class="symbol">U</div><div class="name">Uranium</div><div class="atomic-mass">238.03</div></div>
-                    <div class="element actinide" style="grid-column: 8; grid-row: 11;"><div class="atomic-number">93</div><div class="symbol">Np</div><div class="name">Neptunium</div><div class="atomic-mass">(237)</div></div>
-                    <div class="element actinide" style="grid-column: 9; grid-row: 11;"><div class="atomic-number">94</div><div class="symbol">Pu</div><div class="name">Plutonium</div><div class="atomic-mass">(244)</div></div>
-                    <div class="element actinide" style="grid-column: 10; grid-row: 11;"><div class="atomic-number">95</div><div class="symbol">Am</div><div class="name">Americium</div><div class="atomic-mass">(243)</div></div>
-                    <div class="element actinide" style="grid-column: 11; grid-row: 11;"><div class="atomic-number">96</div><div class="symbol">Cm</div><div class="name">Curium</div><div class="atomic-mass">(247)</div></div>
-                    <div class="element actinide" style="grid-column: 12; grid-row: 11;"><div class="atomic-number">97</div><div class="symbol">Bk</div><div class="name">Berkelium</div><div class="atomic-mass">(247)</div></div>
-                    <div class="element actinide" style="grid-column: 13; grid-row: 11;"><div class="atomic-number">98</div><div class="symbol">Cf</div><div class="name">Californium</div><div class="atomic-mass">(251)</div></div>
-                    <div class="element actinide" style="grid-column: 14; grid-row: 11;"><div class="atomic-number">99</div><div class="symbol">Es</div><div class="name">Einsteinium</div><div class="atomic-mass">(252)</div></div>
-                    <div class="element actinide" style="grid-column: 15; grid-row: 11;"><div class="atomic-number">100</div><div class="symbol">Fm</div><div class="name">Fermium</div><div class="atomic-mass">(257)</div></div>
-                    <div class="element actinide" style="grid-column: 16; grid-row: 11;"><div class="atomic-number">101</div><div class="symbol">Md</div><div class="name">Mendelevium</div><div class="atomic-mass">(258)</div></div>
-                    <div class="element actinide" style="grid-column: 17; grid-row: 11;"><div class="atomic-number">102</div><div class="symbol">No</div><div class="name">Nobelium</div><div class="atomic-mass">(259)</div></div>
-                    <div class="element actinide" style="grid-column: 18; grid-row: 11;"><div class="atomic-number">103</div><div class="symbol">Lr</div><div class="name">Lawrencium</div><div class="atomic-mass">(262)</div></div>
-
-                </div>
-            </div>
-
-            <footer class="site-footer">
-                <p>Social Links Here</p>
-            </footer>
-        </div>
+  <!-- NAVIGATION BAR (sticky) -->
+  <nav id="navbar">
+    <div class="nav-brand">
+      <span class="nav-logo">🦉</span>
+      <span class="nav-title">shyam book depot</span>
     </div>
+    <div class="nav-links">
+      <a href="#" class="nav-link active" data-page="home" id="nav-home">
+        <span class="nav-link-icon">🏠</span>
+        <span class="nav-link-text">Home</span>
+      </a>
+      <a href="#" class="nav-link" data-page="entries" id="nav-entries">
+        <span class="nav-link-icon">📋</span>
+        <span class="nav-link-text">Entries</span>
+      </a>
+      <a href="#" class="nav-link" data-page="admin" id="nav-admin">
+        <span class="nav-link-icon">⚙️</span>
+        <span class="nav-link-text">Admin</span>
+      </a>
+    </div>
+  </nav>
 
-    <script src="script.js"></script>
+  <!-- MAIN CONTENT -->
+  <main id="main-content">
+
+    <!-- ===== HOME PAGE ===== -->
+    <section id="page-home" class="page active">
+      <!-- School Selection View -->
+      <div id="school-selection">
+        <div class="hero-header">
+          <lord-icon src="https://cdn.lordicon.com/kipolvof.json" trigger="hover" style="width:120px;height:120px"></lord-icon>
+          <div class="hero-text">
+            <h1 class="page-title">select a school.</h1>
+            <p class="page-subtitle">Choose a school to start creating an invoice</p>
+          </div>
+        </div>
+        <div id="schools-grid" class="card-grid"></div>
+      </div>
+
+      <!-- Class Selection View (hidden initially) -->
+      <div id="class-selection" class="hidden">
+        <button id="back-to-schools" class="btn-back">← Back to Schools</button>
+        <div class="hero-header">
+          <lord-icon src="https://cdn.lordicon.com/dxjqnwhw.json" trigger="hover" style="width:120px;height:120px"></lord-icon>
+          <div class="hero-text">
+            <h2 id="selected-school-name" class="page-title"></h2>
+            <p class="page-subtitle">Select a class to view available books and notebooks</p>
+          </div>
+        </div>
+        <div id="classes-grid" class="card-grid"></div>
+      </div>
+
+      <!-- Invoice Creation View (hidden initially) -->
+      <div id="invoice-view" class="hidden">
+        <button id="back-to-classes" class="btn-back">← Back to Classes</button>
+
+        <!-- Student Tabs Bar -->
+        <div id="student-tabs-bar">
+          <div id="student-tabs"></div>
+          <div class="student-tabs-actions">
+            <button id="btn-duplicate" class="btn btn-warning btn-sm">📋 Duplicate</button>
+            <button id="btn-new-student" class="btn btn-info btn-sm">➕ New Student</button>
+          </div>
+        </div>
+
+        <!-- Student Content Area (dynamic, one per student) -->
+        <div id="student-content"></div>
+
+        <!-- Bottom Action Bar -->
+        <div id="invoice-actions">
+          <div class="invoice-actions-inner">
+            <div class="invoice-summary" id="invoice-summary"></div>
+            <button id="btn-continue" class="btn btn-success btn-lg">Continue →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ENTRIES PAGE ===== -->
+    <section id="page-entries" class="page hidden">
+      <div class="hero-header">
+        <lord-icon src="https://cdn.lordicon.com/jvucoldz.json" trigger="hover" style="width:120px;height:120px"></lord-icon>
+        <div class="hero-text">
+          <h1 class="page-title">invoice entries.</h1>
+          <p class="page-subtitle">View and manage all generated invoices</p>
+        </div>
+      </div>
+      <div id="entries-search">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-entries" placeholder="Search by name, mobile, or invoice #...">
+        </div>
+        <div class="sort-wrapper">
+          <select id="sort-entries">
+            <option value="date-new">Sort By: Newest</option>
+            <option value="date-old">Sort By: Oldest</option>
+            <option value="name-asc">Sort By: Customer Name</option>
+            <option value="invoice-desc">Sort By: Invoice No.</option>
+          </select>
+        </div>
+      </div>
+      <div id="entries-filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="pending">⏳ Pending</button>
+        <button class="filter-btn" data-filter="partial">🔄 Partial</button>
+        <button class="filter-btn" data-filter="completed">✅ Completed</button>
+        <button class="filter-btn" data-filter="returned">↩️ Returned</button>
+      </div>
+      <div id="entries-list"></div>
+    </section>
+
+    <!-- ===== ADMIN PAGE ===== -->
+    <section id="page-admin" class="page hidden">
+      <!-- Login Form (shown when not authenticated) -->
+      <div id="admin-login">
+        <div class="login-card">
+          <lord-icon src="https://cdn.lordicon.com/rpgnfaeb.json" trigger="hover" style="width:100px;height:100px;margin: 0 auto 16px;display:block;"></lord-icon>
+          <h1 class="page-title">admin login.</h1>
+          <p class="login-subtitle">Enter your credentials to access the dashboard</p>
+          <div class="form-group">
+            <label for="admin-username">Username</label>
+            <input type="text" id="admin-username" placeholder="Enter username" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="admin-password">Password</label>
+            <input type="password" id="admin-password" placeholder="Enter password" autocomplete="current-password">
+          </div>
+          <button id="btn-admin-login" class="btn btn-primary btn-lg btn-full">Login</button>
+          <p id="login-error" class="error-text hidden"></p>
+        </div>
+      </div>
+
+      <!-- Admin Dashboard (hidden until login) -->
+      <div id="admin-dashboard" class="hidden">
+        <div id="admin-header">
+          <div class="hero-header">
+            <lord-icon src="https://cdn.lordicon.com/rpgnfaeb.json" trigger="hover" style="width:120px;height:120px"></lord-icon>
+            <div class="hero-text">
+              <h1 class="page-title">admin dashboard.</h1>
+              <p class="page-subtitle">Manage your inventory and monitor activity</p>
+            </div>
+          </div>
+          <button id="btn-admin-logout" class="btn btn-danger">🚪 Logout</button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div id="stats-grid">
+          <div class="stat-card stat-invoices">
+            <div class="stat-icon">📄</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-total-invoices">0</div>
+              <div class="stat-label">Total Invoices</div>
+            </div>
+          </div>
+          <div class="stat-card stat-pending">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-pending">0</div>
+              <div class="stat-label">Pending Items</div>
+            </div>
+          </div>
+          <div class="stat-card stat-completed">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-completed">0</div>
+              <div class="stat-label">Completed Items</div>
+            </div>
+          </div>
+          <div class="stat-card stat-returned">
+            <div class="stat-icon">↩️</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-returned">0</div>
+              <div class="stat-label">Returned Items</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Tabs -->
+        <div id="admin-tabs">
+          <button class="admin-tab active" data-tab="schools">🏫 Schools</button>
+          <button class="admin-tab" data-tab="classes">📖 Classes</button>
+          <button class="admin-tab" data-tab="books">📕 Books</button>
+          <button class="admin-tab" data-tab="notebooks">📓 Notebooks</button>
+        </div>
+
+        <!-- Admin Content Panels -->
+        <div id="admin-content">
+          <div id="admin-schools" class="admin-panel active"></div>
+          <div id="admin-classes" class="admin-panel hidden"></div>
+          <div id="admin-books" class="admin-panel hidden"></div>
+          <div id="admin-notebooks" class="admin-panel hidden"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== MODALS ===== -->
+
+  <!-- Checkout Modal -->
+  <div id="modal-checkout" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Complete Invoice</h2>
+        <button class="modal-close" data-modal="modal-checkout">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="checkout-mobile">Customer Mobile Number</label>
+          <input type="text" id="checkout-mobile" placeholder="Enter exactly 10-digits" pattern="\d{10}" maxlength="10">
+        </div>
+        <div class="form-group">
+          <label for="checkout-name">Customer Name</label>
+          <input type="text" id="checkout-name" placeholder="Enter customer name">
+        </div>
+        <div class="form-group">
+          <label for="checkout-message">Invoice Message (Optional)</label>
+          <textarea id="checkout-message" placeholder="Add a message for this invoice..." rows="3"></textarea>
+        </div>
+        <div id="checkout-summary" class="checkout-summary"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-cancel-checkout" class="btn btn-secondary">Cancel</button>
+        <button id="btn-complete-invoice" class="btn btn-success">✅ Complete Invoice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Student Modal -->
+  <div id="modal-new-student" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add New Student</h2>
+        <button class="modal-close" data-modal="modal-new-student">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="new-student-school">Select School</label>
+          <select id="new-student-school">
+            <option value="">-- Select School --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="new-student-class">Select Class</label>
+          <select id="new-student-class" disabled>
+            <option value="">-- Select Class --</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-cancel-new-student" class="btn btn-secondary">Cancel</button>
+        <button id="btn-confirm-new-student" class="btn btn-primary">Add Student</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Add/Edit Modal -->
+  <div id="modal-admin" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="admin-modal-title"></h2>
+        <button class="modal-close" data-modal="modal-admin">&times;</button>
+      </div>
+      <div class="modal-body" id="admin-modal-body"></div>
+      <div class="modal-actions">
+        <button id="btn-cancel-admin" class="btn btn-secondary">Cancel</button>
+        <button id="btn-save-admin" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoice Details Modal -->
+  <div id="modal-invoice-details" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content" style="max-width: 800px; width: 95%;">
+      <div class="modal-header">
+        <h2 id="invoice-details-title">Invoice Details</h2>
+        <button class="modal-close" data-modal="modal-invoice-details">&times;</button>
+      </div>
+      <div class="modal-body" id="invoice-details-body">
+        <!-- Dynamic content goes here -->
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="Modal.close('modal-invoice-details')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast/Notification -->
+  <div id="toast" class="toast hidden">
+    <span class="toast-icon"></span>
+    <span class="toast-message"></span>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading" class="loading-overlay hidden">
+    <div class="spinner"></div>
+    <p class="loading-text">Loading...</p>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
